@@ -1,4 +1,4 @@
-module counter (
+module tt_um_brendtam (
 	input clk,
 	input en,
 	input rst_n,
