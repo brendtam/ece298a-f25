@@ -1,4 +1,4 @@
-module counter (
+module counter8 (
 	input clk,
 	input en,
 	input rst_n,
