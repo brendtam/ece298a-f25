@@ -5,7 +5,7 @@ module counter8 (
 	input load,
 	input [7:0] load_in,
 	output [7:0] out
-)
+);
 
 reg [7:0] bits = 0;
 wire [7:0] bits1 = bits;
