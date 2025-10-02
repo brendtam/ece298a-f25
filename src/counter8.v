@@ -14,7 +14,7 @@ wire [7:0] bits1 = bits;
 assign uo_out = bits;
 
 // tri state output
-assign uio_out[0] = uio_in[1]
+assign uio_out[0] = uio_in[1];
 
 always @(posedge clk or negedge rst_n) begin
 	// async reset
