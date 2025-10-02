@@ -31,7 +31,7 @@ async def test_project(dut):
     dut.rst_n.value = 1
 
     # test count
-    await ClockCycles(dut.clk, 3)
+    await ClockCycles(dut.clk, 4)
     assert dut.uo_out.value == 3
 
     # sync load
