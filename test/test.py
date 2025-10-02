@@ -32,6 +32,7 @@ async def test_project(dut):
 
     # test count
     await ClockCycles(dut.clk, 3)
+    await cocotb.triggers.ReadOnly()
     assert dut.uo_out.value == 3
 
     # sync load
@@ -40,6 +41,7 @@ async def test_project(dut):
     await ClockCycles(dut.clk, 1)
     dut.uio_in.value = 0
     await ClockCycles(dut.clk, 3)
+    await cocotb.triggers.ReadOnly()
     assert dut.uo_out.value == 13
 
     # tri state
