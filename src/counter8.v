@@ -14,7 +14,6 @@ assign uio_oe  = 0;
 
 reg [7:0] bits = 0;
 wire [7:0] bits1 = bits;
-assign uo_out = bits;
 
 // tri state output
 assign uio_out[0] = uio_in[1];
@@ -32,16 +31,18 @@ always @(posedge clk or negedge rst_n) begin
 		end else begin
 			// 8 bit counter
 			bits[0] <= ~bits1[0];
-			bits[1] <= (bits1[0]) ^ bits[1];
-			bits[2] <= (bits1[0] & bits1[1]) ^ bits[2];
-			bits[3] <= (bits1[0] & bits1[1] & bits1[2]) ^ bits[3];
-			bits[4] <= (bits1[0] & bits1[1] & bits1[2] & bits1[3]) ^ bits[4];
-			bits[5] <= (bits1[0] & bits1[1] & bits1[2] & bits1[3] & bits1[4]) ^ bits[5];
-			bits[6] <= (bits1[0] & bits1[1] & bits1[2] & bits1[3] & bits1[4] & bits1[5]) ^ bits[6];
-			bits[7] <= (bits1[0] & bits1[1] & bits1[2] & bits1[3] & bits1[4] & bits1[5] & bits1[6]) ^ bits[7];
+			bits[1] <= (bits1[0]) ^ bits1[1];
+			bits[2] <= (bits1[0] & bits1[1]) ^ bits1[2];
+			bits[3] <= (bits1[0] & bits1[1] & bits1[2]) ^ bits1[3];
+			bits[4] <= (bits1[0] & bits1[1] & bits1[2] & bits1[3]) ^ bits1[4];
+			bits[5] <= (bits1[0] & bits1[1] & bits1[2] & bits1[3] & bits1[4]) ^ bits1[5];
+			bits[6] <= (bits1[0] & bits1[1] & bits1[2] & bits1[3] & bits1[4] & bits1[5]) ^ bits1[6];
+			bits[7] <= (bits1[0] & bits1[1] & bits1[2] & bits1[3] & bits1[4] & bits1[5] & bits1[6]) ^ bits1[7];
 		end
 	end
 end
+
+assign uo_out = bits;
 
 endmodule
 	
