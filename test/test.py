@@ -39,7 +39,7 @@ async def test_project(dut):
     dut.uio_in.value = 1
     await ClockCycles(dut.clk, 1)
     dut.uio_in.value = 0
-    await ClockCycles(dut.clk, 3)
+    await ClockCycles(dut.clk, 4)
     assert dut.uo_out.value == 13
 
     # tri state
