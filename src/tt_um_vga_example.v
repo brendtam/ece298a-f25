@@ -38,12 +38,9 @@ module tt_um_vga_example(
   wire in_pattern;
   wire border;
   wire [9:0] radius_sqrt2;
-  wire [19:0] radius_product;
   wire [7:0] bullets;
   wire [9:0] bullet_pos_x [7:0];
   wire [9:0] bullet_pos_y [7:0];
-  wire [19:0] bullet_x [7:0];
-  wire [19:0] bullet_y [7:0];
 
   // TinyVGA PMOD
   assign uo_out = {hsync, B[0], G[0], R[0], vsync, B[1], G[1], R[1]};
@@ -65,8 +62,7 @@ module tt_um_vga_example(
     .vpos(pix_y)
   );
   
-  assign radius_product = radius + 10;
-  assign radius_sqrt2 = radius_product >> 7;
+  assign radius_sqrt2 = (radius >> 1) + (radius >> 3) + (radius >> 4) + (radius >> 6);
   
   assign bullet_pos_x[0] = H_ORIGIN + radius;           // 0°
 	assign bullet_pos_y[0] = V_ORIGIN;
@@ -95,9 +91,16 @@ module tt_um_vga_example(
   genvar i;
   generate
 	for (i = 0; i < 8; i = i + 1) begin
-	  assign bullet_x[i] = (pix_x - bullet_pos_x[i]);
-		assign bullet_y[i] = (pix_y - bullet_pos_y[i]);
-		assign bullets[i] = (bullet_x[i] + bullet_y[i] <= BULLET_SIZE2);
+    wire [9:0] dx = (pix_x > bullet_pos_x[i]) ? (pix_x - bullet_pos_x[i]) : (bullet_pos_x[i] - pix_x);
+    wire [9:0] dy = (pix_y > bullet_pos_y[i]) ? (pix_y - bullet_pos_y[i]) : (bullet_pos_y[i] - pix_y);
+    wire [9:0] max_d = (dx > dy) ? dx : dy;
+    wire [9:0] sum_d = dx + dy;
+
+    wire [11:0] approx_radius =
+      ((max_d >> 2) + (max_d >> 4) + (max_d >> 5)) +
+      ((sum_d >> 2) + (sum_d >> 3) + (sum_d >> 5));
+
+    assign bullets[i] = (approx_radius <= BULLET_SIZE);
 	end
   endgenerate
 	
