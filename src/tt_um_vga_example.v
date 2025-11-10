@@ -26,8 +26,6 @@ module tt_um_vga_example(
   wire [9:0] pix_x;
   wire [9:0] pix_y;
 
-  reg [3:0] state;
-  reg [0:0] state_counter;
   reg [9:0] radius;
   parameter H_ORIGIN = 320;
   parameter V_ORIGIN = 240;
@@ -108,10 +106,7 @@ module tt_um_vga_example(
       state_counter <= 0;
       radius <= 0;
     end else begin
-      state_counter <= state_counter + 1;
-			if (state_counter == 0) begin
-				radius <= radius + 20;
-			end
+			radius <= radius + 20;
 			if (radius > 400) begin
 				radius <= 0;
 			end
