@@ -102,8 +102,6 @@ module tt_um_vga_example(
   
   always @(posedge vsync, negedge rst_n) begin
     if (~rst_n) begin
-      state <= 0;
-      state_counter <= 0;
       radius <= 0;
     end else begin
 			radius <= radius + 20;
