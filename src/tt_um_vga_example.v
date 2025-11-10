@@ -25,9 +25,9 @@ module tt_um_vga_example(
   wire video_active;
   wire [9:0] pix_x;
   wire [9:0] pix_y;
-  wire sound;
+  //wire sound;
 
-  reg [3:0] state;
+  //reg [3:0] state;
   reg [0:0] state_counter;
   reg [9:0] radius;
   parameter H_ORIGIN = 320;
@@ -104,13 +104,9 @@ module tt_um_vga_example(
 	assign in_pattern = ~(bullets == 0);
   assign border = ((pix_x <= 10) || (pix_x >= 630)) || ((pix_y <= 10) || (pix_y >= 470));
   
-  assign R = (video_active && in_pattern) ? 2'b11 : 2'b00;
-	assign G = (video_active && in_pattern) ? 2'b00 : 2'b00;
-	assign B = (video_active && in_pattern) ? 2'b11 : 2'b00;
-
-  assign R = (video_active && border) ? 2'b11 : R;
-  assign G = (video_active && border) ? 2'b00 : G;
-	assign B = (video_active && border) ? 2'b00 : B;
+  assign R = (video_active && (in_pattern || border)) ? 2'b11 : 2'b00;
+	assign G = 2'b00;
+	assign B = (video_active && in_pattern) ? ((border) ? 2'b00 : 2'b11) : 2'b00;
   
   always @(posedge vsync, negedge rst_n) begin
     if (~rst_n) begin
