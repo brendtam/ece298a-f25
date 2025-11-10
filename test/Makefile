@@ -5,7 +5,8 @@
 SIM ?= icarus
 TOPLEVEL_LANG ?= verilog
 SRC_DIR = $(PWD)/../src
-PROJECT_SOURCES = counter8.v
+PROJECT_SOURCES = tt_um_vga_example.v
+PROJECT_SOURCES += hvsync_generator.v
 
 ifneq ($(GATES),yes)
 
