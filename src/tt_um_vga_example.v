@@ -25,15 +25,13 @@ module tt_um_vga_example(
   wire video_active;
   wire [9:0] pix_x;
   wire [9:0] pix_y;
-  wire sound;
 
   reg [3:0] state;
   reg [0:0] state_counter;
   reg [9:0] radius;
   parameter H_ORIGIN = 320;
-  parameter V_ORIGIN = 160;
+  parameter V_ORIGIN = 240;
   parameter BULLET_SIZE = 6;
-  parameter SQRT2 = 91;
 
   wire in_pattern;
   wire border;
@@ -93,14 +91,7 @@ module tt_um_vga_example(
 	for (i = 0; i < 8; i = i + 1) begin
     wire [9:0] dx = (pix_x > bullet_pos_x[i]) ? (pix_x - bullet_pos_x[i]) : (bullet_pos_x[i] - pix_x);
     wire [9:0] dy = (pix_y > bullet_pos_y[i]) ? (pix_y - bullet_pos_y[i]) : (bullet_pos_y[i] - pix_y);
-    wire [9:0] max_d = (dx > dy) ? dx : dy;
-    wire [9:0] sum_d = dx + dy;
-
-    wire [11:0] approx_radius =
-      ((max_d >> 2) + (max_d >> 4) + (max_d >> 5)) +
-      ((sum_d >> 2) + (sum_d >> 3) + (sum_d >> 5));
-
-    assign bullets[i] = (approx_radius <= BULLET_SIZE);
+    assign bullets[i] = ((dx + dy) + ((dx > dy ? dy : dx) >> 1) <= BULLET_SIZE);
 	end
   endgenerate
 	
