@@ -25,9 +25,9 @@ module tt_um_vga_example(
   wire video_active;
   wire [9:0] pix_x;
   wire [9:0] pix_y;
-  //wire sound;
+  wire sound;
 
-  //reg [3:0] state;
+  reg [3:0] state;
   reg [0:0] state_counter;
   reg [9:0] radius;
   parameter H_ORIGIN = 320;
