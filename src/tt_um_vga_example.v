@@ -65,7 +65,7 @@ module tt_um_vga_example(
     .vpos(pix_y)
   );
   
-  assign radius_product = radius * SQRT2;
+  assign radius_product = radius + 10;
   assign radius_sqrt2 = radius_product >> 7;
   
   assign bullet_pos_x[0] = H_ORIGIN + radius;           // 0°
@@ -95,8 +95,8 @@ module tt_um_vga_example(
   genvar i;
   generate
 	for (i = 0; i < 8; i = i + 1) begin
-	  assign bullet_x[i] = (pix_x - bullet_pos_x[i]) * (pix_x - bullet_pos_x[i]);
-		assign bullet_y[i] = (pix_y - bullet_pos_y[i]) * (pix_y - bullet_pos_y[i]);
+	  assign bullet_x[i] = (pix_x - bullet_pos_x[i]);
+		assign bullet_y[i] = (pix_y - bullet_pos_y[i]);
 		assign bullets[i] = (bullet_x[i] + bullet_y[i] <= BULLET_SIZE2);
 	end
   endgenerate
