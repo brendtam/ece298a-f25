@@ -32,7 +32,7 @@ module tt_um_vga_example(
   reg [9:0] radius;
   parameter H_ORIGIN = 320;
   parameter V_ORIGIN = 160;
-  parameter BULLET_SIZE2 = 100;
+  parameter BULLET_SIZE = 6;
   parameter SQRT2 = 91;
 
   wire in_pattern;
