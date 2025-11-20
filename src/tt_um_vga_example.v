@@ -36,86 +36,53 @@ module tt_um_vga_example(
   reg signed [8:0] cos_val; 
   reg signed [8:0] sin_val; 
   reg [5:0] angle_idx;
-  reg [3:0] frame_counter;
 
   always @(*) begin
-    // Using angle_idx[5:0] for 64 total steps (360/64 = 5.625 degrees per step)
-    case(angle_idx) 
+    // Using angle_idx[5:1] for 32 total steps (11.25 degrees per step)
+    case(angle_idx[5:1]) 
       // --- Quadrant 1 (0 to 90 degrees) ---
       0:  begin cos_val =  128; sin_val =    0; end // 0.00 deg
-      1:  begin cos_val =  128; sin_val =   14; end // 5.63 deg
-      2:  begin cos_val =  127; sin_val =   28; end // 11.25 deg
-      3:  begin cos_val =  125; sin_val =   42; end // 16.88 deg
-      4:  begin cos_val =  122; sin_val =   55; end // 22.50 deg
-      5:  begin cos_val =  118; sin_val =   67; end // 28.13 deg
-      6:  begin cos_val =  113; sin_val =   79; end // 33.75 deg
-      7:  begin cos_val =  107; sin_val =   89; end // 39.38 deg
-      8:  begin cos_val =   99; sin_val =   99; end // 45.00 deg
-      9:  begin cos_val =   90; sin_val =  107; end // 50.63 deg
-      10: begin cos_val =   79; sin_val =  113; end // 56.25 deg
-      11: begin cos_val =   67; sin_val =  118; end // 61.88 deg
-      12: begin cos_val =   55; sin_val =  122; end // 67.50 deg
-      13: begin cos_val =   42; sin_val =  125; end // 73.13 deg
-      14: begin cos_val =   28; sin_val =  127; end // 78.75 deg
-      15: begin cos_val =   14; sin_val =  128; end // 84.38 deg
-      16: begin cos_val =    0; sin_val =  128; end // 90.00 deg
-
-      // --- Quadrant 2 (90 to 180 degrees) ---
-      17: begin cos_val =  -14; sin_val =  128; end // 95.63 deg
-      18: begin cos_val =  -28; sin_val =  127; end // 101.25 deg
-      19: begin cos_val =  -42; sin_val =  125; end // 106.88 deg
-      20: begin cos_val =  -55; sin_val =  122; end // 112.50 deg
-      21: begin cos_val =  -67; sin_val =  118; end // 118.13 deg
-      22: begin cos_val =  -79; sin_val =  113; end // 123.75 deg
-      23: begin cos_val =  -89; sin_val =  107; end // 129.38 deg
-      24: begin cos_val =  -99; sin_val =   99; end // 135.00 deg
-      25: begin cos_val = -107; sin_val =   90; end // 140.63 deg
-      26: begin cos_val = -113; sin_val =   79; end // 146.25 deg
-      27: begin cos_val = -118; sin_val =   67; end // 151.88 deg
-      28: begin cos_val = -122; sin_val =   55; end // 157.50 deg
-      29: begin cos_val = -125; sin_val =   42; end // 163.13 deg
-      30: begin cos_val = -127; sin_val =   28; end // 168.75 deg
-      31: begin cos_val = -128; sin_val =   14; end // 174.38 deg
-      32: begin cos_val = -128; sin_val =    0; end // 180.00 deg
-
-      // --- Quadrant 3 (180 to 270 degrees) ---
-      33: begin cos_val = -128; sin_val =  -14; end // 185.63 deg
-      34: begin cos_val = -127; sin_val =  -28; end // 191.25 deg
-      35: begin cos_val = -125; sin_val =  -42; end // 196.88 deg
-      36: begin cos_val = -122; sin_val =  -55; end // 202.50 deg
-      37: begin cos_val = -118; sin_val =  -67; end // 208.13 deg
-      38: begin cos_val = -113; sin_val =  -79; end // 213.75 deg
-      39: begin cos_val = -107; sin_val =  -89; end // 219.38 deg
-      40: begin cos_val =  -99; sin_val =  -99; end // 225.00 deg
-      41: begin cos_val =  -90; sin_val = -107; end // 230.63 deg
-      42: begin cos_val =  -79; sin_val = -113; end // 236.25 deg
-      43: begin cos_val =  -67; sin_val = -118; end // 241.88 deg
-      44: begin cos_val =  -55; sin_val = -122; end // 247.50 deg
-      45: begin cos_val =  -42; sin_val = -125; end // 253.13 deg
-      46: begin cos_val =  -28; sin_val = -127; end // 258.75 deg
-      47: begin cos_val =  -14; sin_val = -128; end // 264.38 deg
-      48: begin cos_val =    0; sin_val = -128; end // 270.00 deg
-
-      // --- Quadrant 4 (270 to 360 degrees) ---
-      49: begin cos_val =   14; sin_val = -128; end // 275.63 deg
-      50: begin cos_val =   28; sin_val = -127; end // 281.25 deg
-      51: begin cos_val =   42; sin_val = -125; end // 286.88 deg
-      52: begin cos_val =   55; sin_val = -122; end // 292.50 deg
-      53: begin cos_val =   67; sin_val = -118; end // 298.13 deg
-      54: begin cos_val =   79; sin_val = -113; end // 303.75 deg
-      55: begin cos_val =   89; sin_val = -107; end // 309.38 deg
-      56: begin cos_val =   99; sin_val =  -99; end // 315.00 deg
-      57: begin cos_val =  107; sin_val =  -90; end // 320.63 deg
-      58: begin cos_val =  113; sin_val =  -79; end // 326.25 deg
-      59: begin cos_val =  118; sin_val =  -67; end // 331.88 deg
-      60: begin cos_val =  122; sin_val =  -55; end // 337.50 deg
-      61: begin cos_val =  125; sin_val =  -42; end // 343.13 deg
-      62: begin cos_val =  127; sin_val =  -28; end // 348.75 deg
-      63: begin cos_val =  128; sin_val =  -14; end // 354.38 deg
+      1:  begin cos_val =  127; sin_val =   28; end // 11.25 deg
+      2:  begin cos_val =  122; sin_val =   55; end // 22.50 deg
+      3:  begin cos_val =  113; sin_val =   79; end // 33.75 deg
+      4:  begin cos_val =   99; sin_val =   99; end // 45.00 deg
+      5:  begin cos_val =   79; sin_val =  113; end // 56.25 deg
+      6:  begin cos_val =   55; sin_val =  122; end // 67.50 deg
+      7:  begin cos_val =   28; sin_val =  127; end // 78.75 deg
       
-      default: begin cos_val = 128; sin_val = 0; end // Wraps back to 0
+      // --- Quadrant 2 (90 to 180 degrees) ---
+      8:  begin cos_val =    0; sin_val =  128; end // 90.00 deg
+      9:  begin cos_val =  -28; sin_val =  127; end // 101.25 deg
+      10: begin cos_val =  -55; sin_val =  122; end // 112.50 deg
+      11: begin cos_val =  -79; sin_val =  113; end // 123.75 deg
+      12: begin cos_val =  -99; sin_val =   99; end // 135.00 deg
+      13: begin cos_val = -113; sin_val =   79; end // 146.25 deg
+      14: begin cos_val = -122; sin_val =   55; end // 157.50 deg
+      15: begin cos_val = -127; sin_val =   28; end // 168.75 deg
+      
+      // --- Quadrant 3 (180 to 270 degrees) ---
+      16: begin cos_val = -128; sin_val =    0; end // 180.00 deg
+      17: begin cos_val = -127; sin_val =  -28; end // 191.25 deg
+      18: begin cos_val = -122; sin_val =  -55; end // 202.50 deg
+      19: begin cos_val = -113; sin_val =  -79; end // 213.75 deg
+      20: begin cos_val =  -99; sin_val =  -99; end // 225.00 deg
+      21: begin cos_val =  -79; sin_val = -113; end // 236.25 deg
+      22: begin cos_val =  -55; sin_val = -122; end // 247.50 deg
+      23: begin cos_val =  -28; sin_val = -127; end // 258.75 deg
+      
+      // --- Quadrant 4 (270 to 360 degrees) ---
+      24: begin cos_val =    0; sin_val = -128; end // 270.00 deg
+      25: begin cos_val =   28; sin_val = -127; end // 281.25 deg
+      26: begin cos_val =   55; sin_val = -122; end // 292.50 deg
+      27: begin cos_val =   79; sin_val = -113; end // 303.75 deg
+      28: begin cos_val =   99; sin_val =  -99; end // 315.00 deg
+      29: begin cos_val =  113; sin_val =  -79; end // 326.25 deg
+      30: begin cos_val =  122; sin_val =  -55; end // 337.50 deg
+      31: begin cos_val =  127; sin_val =  -28; end // 348.75 deg
+      
+      default: begin cos_val = 128; sin_val = 0; end
     endcase
-end
+  end
 
   // --- Coordinate Mathematics ---
   // Use 24 bits to be safe. 16 integer, 8 fractional.
@@ -147,15 +114,9 @@ end
   always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       angle_idx <= 0;
-      frame_counter <= 0;
       row_u <= 0; row_v <= 0;
       curr_u <= 0; curr_v <= 0;
     end else begin
-
-      // --- Animation Timer ---
-      if (pix_y == 479 && pix_x == 639) begin
-          angle_idx <= angle_idx + 1;
-      end
 
       // --- Coordinate Updates ---
       // Priority 1: Start of Frame (Top-Left)
@@ -185,6 +146,10 @@ end
     end
   end
 
+  always @(posedge vsync) begin
+    angle_idx <= angle_idx + 1;
+  end
+
   // --- Shape Rendering ---
   // Slice bits [23:7] to get integer. (Scale 128 = 2^7)
   wire signed [16:0] int_u = curr_u[23:7];
@@ -197,7 +162,6 @@ end
 
   // --- Background Grid (Debug) ---
   // Draws a faint grid every 32 pixels to verify coordinate stability
-  wire grid = (pix_x[4:0] == 0) || (pix_y[4:0] == 0);
 
   // --- Colors ---
   // Shape = White (R=11, G=11, B=11)
@@ -205,7 +169,7 @@ end
   // Back  = Black
   wire [1:0] R = (video_active && in_shape) ? 2'b11 : 2'b00;
   wire [1:0] G = (video_active && in_shape) ? 2'b11 : 2'b00;
-  wire [1:0] B = (video_active) ? (in_shape ? 2'b11 : (grid ? 2'b10 : 2'b00)) : 2'b00;
+  wire [1:0] B = (video_active && in_shape) ? 2'b11 : 2'b00;
 
   assign uo_out = {hsync, B[0], G[0], R[0], vsync, B[1], G[1], R[1]};
   assign uio_out = 0;
