@@ -118,6 +118,12 @@ module tt_um_vga_example(
       curr_u <= 0; curr_v <= 0;
     end else begin
 
+      // 1. Animation Timer: Update Angle EVERY FRAME (Moved from separate vsync block)
+      // Update when the display reaches the last pixel of the active area.
+      if (pix_y == 479 && pix_x == 639) begin
+          angle_idx <= angle_idx + 1; 
+      end
+
       // --- Coordinate Updates ---
       // Priority 1: Start of Frame (Top-Left)
       if (pix_y == 0 && pix_x == 0) begin
@@ -144,10 +150,6 @@ module tt_um_vga_example(
           curr_v <= curr_v + {{15{sin_val[8]}}, sin_val};
       end
     end
-  end
-
-  always @(posedge vsync) begin
-    angle_idx <= angle_idx + 1;
   end
 
   // --- Shape Rendering ---
