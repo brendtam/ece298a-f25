@@ -100,10 +100,10 @@ module tt_um_vga_example(
   // A * (-B) = -(A * B)
 
   // Helper Wires for (Value * Trig_Val) using shifts
-  wire signed [17:0] cos_320 = (cos_val <<< 8) + (cos_val <<< 6); // 320 * cos_val
-  wire signed [17:0] sin_320 = (sin_val <<< 8) + (sin_val <<< 6); // 320 * sin_val
-  wire signed [17:0] cos_240 = (cos_val <<< 8) - (cos_val <<< 4); // 240 * cos_val
-  wire signed [17:0] sin_240 = (sin_val <<< 8) - (sin_val <<< 4); // 240 * sin_val
+  wire signed [17:0] cos_320 = (cos_val << 8) + (cos_val << 6); // 320 * cos_val
+  wire signed [17:0] sin_320 = (sin_val << 8) + (sin_val << 6); // 320 * sin_val
+  wire signed [17:0] cos_240 = (cos_val << 8) - (cos_val << 4); // 240 * cos_val
+  wire signed [17:0] sin_240 = (sin_val << 8) - (sin_val << 4); // 240 * sin_val
 
   // start_u = (-320 * cos) - (-240 * sin) = -(320 * cos) + (240 * sin)
   wire signed [23:0] start_u = (-cos_320) + sin_240; 
