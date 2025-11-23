@@ -62,6 +62,10 @@ module tt_um_vga_example(
     assign bullet_pos_y[6] = V_ORIGIN + 50 + fall_y;      // bottom center
     assign bullet_pos_y[7] = V_ORIGIN + 48 + fall_y;      // bottom right
 
+    assign bullet_pos_x[2] = 0;
+    assign bullet_pos_y[2] = 0;
+    bullets[2] = 0;
+
     // Single fall counter
     reg [9:0] frame_count; 
     reg [9:0] fall_speed;
