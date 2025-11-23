@@ -11,109 +11,99 @@ module tt_um_vga_example(
   input wire rst_n
 );
 
-    // VGA signals
-    wire hsync, vsync;
-    wire [1:0] R, G, B;
-    wire video_active;
-    wire [9:0] pix_x, pix_y;
+  // VGA signals
+  wire hsync;
+  wire vsync;
+  wire [1:0] R;
+  wire [1:0] G;
+  wire [1:0] B;
+  wire video_active;
+  wire [9:0] pix_x;
+  wire [9:0] pix_y;
 
-    assign uio_out = 8'b0;
-    assign uio_oe  = 8'b0;
+  hvsync_generator hvsync_gen(
+    .clk(clk),
+    .reset(~rst_n),
+    .hsync(hsync),
+    .vsync(vsync),
+    .display_on(video_active),
+    .hpos(pix_x),
+    .vpos(pix_y)
+  );
 
-    wire _unused_ok = &{ena, ui_in, uio_in, uio_out, uio_oe};
+  parameter H_ORIGIN = 290;
+  parameter V_ORIGIN = 340;
 
-    parameter H_ORIGIN = 320;
-    parameter V_ORIGIN = 0;
-    parameter BULLET_SIZE = 6;
-    parameter NUM_BULLETS = 8;
+  reg [4:0] thickness;
+  reg visible;
+  wire part1 = ((pix_x <= H_ORIGIN + thickness) && (pix_x >= H_ORIGIN - thickness)) &&
+    ((pix_y <= V_ORIGIN + thickness) && (pix_y >= (V_ORIGIN - 200) - (thickness<<1)));
+  wire part1_outer = ((pix_x <= H_ORIGIN + (thickness<<1)) && (pix_x >= H_ORIGIN - (thickness<<1))) &&
+    ((pix_y <= V_ORIGIN + (thickness<<1)) && (pix_y >= (V_ORIGIN - 200) - (thickness<<2) + (thickness>>1) + 8));
+  wire part2 = ((pix_x <= (H_ORIGIN + 100) + thickness) && (pix_x >= H_ORIGIN - thickness)) &&
+    ((pix_y <= V_ORIGIN + thickness) && (pix_y >= V_ORIGIN - thickness));
+  wire part2_outer = ((pix_x <= (H_ORIGIN + 100) + (thickness<<1)) && (pix_x >= H_ORIGIN - thickness)) &&
+    (((pix_y <= V_ORIGIN + (thickness<<1)) && (pix_y >= V_ORIGIN - (thickness<<1))));
+  wire in_pattern = (part1 || part2) && visible;
+  wire in_outer = (part1_outer || part2_outer) && visible;
 
-    reg [9:0] fall_y;
-    reg [9:0] shift_side;
+  wire border = ((pix_x >= 0 && pix_x <= 10) || (pix_x >= 630 && pix_x <= 640)) ||
+                ((pix_y >= 0 && pix_y <= 10) || (pix_y >= 470 && pix_y <= 480));
 
-    wire [9:0] bullet_pos_x [0:NUM_BULLETS-1];
-    wire [9:0] bullet_pos_y [0:NUM_BULLETS-1];
-    wire [NUM_BULLETS-1:0] bullets;
+  assign R = (video_active && (in_pattern || in_outer || border)) ? 2'b11 : 2'b00;
+  assign G = 2'b00;
+  assign B = (video_active && border) ? 2'b00 : (video_active && in_pattern ? 2'b11 : (video_active && in_outer ? 2'b10 : 2'b00));
 
-    assign uo_out = {hsync, B[0], G[0], R[0], vsync, B[1], G[1], R[1]};
+  assign uo_out = {hsync, B[0], G[0], R[0], vsync, B[1], G[1], R[1]};
+  assign uio_out = 0;
+  assign uio_oe  = 0;
 
-    // Simple VGA generator
-    hvsync_generator hvsync_gen (
-        .clk(clk),
-        .reset(~rst_n),
-        .hsync(hsync),
-        .vsync(vsync),
-        .display_on(video_active),
-        .hpos(pix_x),
-        .vpos(pix_y)
-    );
+  wire _unused_ok = &{ena, ui_in, uio_in};
 
-    // Horizontal positions for a W
-    assign bullet_pos_x[0] = H_ORIGIN - 100 - (shift_side >> 1);  // top left
-    assign bullet_pos_x[1] = H_ORIGIN - 72  - shift_side;         // middle left
-    assign bullet_pos_x[3] = H_ORIGIN + 50  + (shift_side >> 1);  // bottom right
-    assign bullet_pos_x[4] = H_ORIGIN + 100 + (shift_side >> 1);  // top right
-    assign bullet_pos_x[5] = H_ORIGIN - 50  - (shift_side >> 1);  // bottom left
-    assign bullet_pos_x[6] = H_ORIGIN;                            // middle
-    assign bullet_pos_x[7] = H_ORIGIN + 72 + shift_side;          // middle right
+  reg [1:0] state;
+  reg [5:0] counter;
 
-    // Vertical positions
-    assign bullet_pos_y[0] = V_ORIGIN + fall_y;           // left
-    assign bullet_pos_y[1] = V_ORIGIN + 48 + fall_y;      // left mid
-    assign bullet_pos_y[3] = V_ORIGIN + 100 + fall_y;     // bottom mid right
-    assign bullet_pos_y[4] = V_ORIGIN + fall_y;           // right
-    assign bullet_pos_y[5] = V_ORIGIN + 100 + fall_y;     // bottom mid left
-    assign bullet_pos_y[6] = V_ORIGIN + 50 + fall_y;      // bottom center
-    assign bullet_pos_y[7] = V_ORIGIN + 48 + fall_y;      // bottom right
-
-    assign bullet_pos_x[2] = 0;
-    assign bullet_pos_y[2] = 0;
-
-    // Single fall counter
-    reg [9:0] frame_count; 
-    reg [9:0] fall_speed;
-
-    always @(posedge clk or negedge rst_n) begin
-        if (~rst_n) begin
-            frame_count <= 0;
-            fall_y <= 0;
-            fall_speed <= 2;
-        end else if (vsync) begin
-            if (frame_count == 800) begin
-                shift_side <= (fall_y < 150) ? 0 : shift_side + 1;
-
-                if      (fall_y < 25)  fall_speed <= 10;
-                else if (fall_y < 100) fall_speed <= 4;
-                else if (fall_y < 125) fall_speed <= 3;
-                else if (fall_y < 160) fall_speed <= 2;
-                else                   fall_speed <= 1;
-
-                fall_y <= (fall_y >= 600) ? 0 : fall_y + fall_speed;
-                frame_count <= 0;
-            end else begin
-                frame_count <= frame_count + 1;
-            end
+  always @(posedge vsync, negedge rst_n) begin
+    if (~rst_n) begin
+      thickness <= 0;
+      counter <= 0;
+      state <= 0;
+      visible <= 1;
+    end else begin
+      case (state)
+        // thin line
+        2'b00: begin
+          counter <= counter + 1;
+          if (counter == 0) begin
+            thickness <= 5;
+            state <= 1;
+          end
         end
+        // blow up
+        2'b01: begin
+          thickness <= thickness + 2;
+          if (thickness >= 15) begin
+            state <= 2;
+          end
+        end
+        // stay
+        2'b10: begin    
+          counter <= counter + 1;
+          if (counter == 0) begin
+            state <= 3;
+            visible <= 0;
+          end
+        end
+        // disappear
+        2'b11: begin
+          counter <= counter + 1;
+          if (counter == 0) begin
+            state <= 0;
+            visible <= 1;
+            thickness <= 0;
+          end
+        end
+      endcase
     end
-
-    // Render bullets
-    genvar i;
-    generate
-        for (i = 0; i < NUM_BULLETS; i = i + 1) begin
-            if (i == 2) begin
-              assign bullets[i] = 0;
-            end else begin
-              wire [9:0] dx = (pix_x > bullet_pos_x[i]) ? (pix_x - bullet_pos_x[i]) : (bullet_pos_x[i] - pix_x);
-              wire [9:0] dy = (pix_y > bullet_pos_y[i]) ? (pix_y - bullet_pos_y[i]) : (bullet_pos_y[i] - pix_y);
-              assign bullets[i] = ((dx + dy + ((dx > dy ? dy : dx) >> 1)) <= BULLET_SIZE);
-            end
-        end
-    endgenerate
-
-    wire in_pattern = |bullets;
-    wire border = ((pix_x <= 10) || (pix_x >= 630)) || ((pix_y <= 10) || (pix_y >= 470));
-
-    assign R = (video_active && (in_pattern || border)) ? 2'b11 : 2'b00;
-    assign G = 2'b00;
-    assign B = (video_active && in_pattern) ? (border ? 2'b00 : 2'b11) : 2'b00;
-
+  end
 endmodule
