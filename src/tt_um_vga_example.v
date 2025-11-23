@@ -17,7 +17,7 @@ module tt_um_vga_example(
     wire video_active;
     wire [9:0] pix_x, pix_y;
 
-    wire _unused_ok = &{ena, ui_in, uio_in};
+    wire _unused_ok = &{ena, ui_in, uio_in, uio_out, uio_oe};
 
     parameter H_ORIGIN = 320;
     parameter V_ORIGIN = 0;
@@ -64,7 +64,6 @@ module tt_um_vga_example(
 
     assign bullet_pos_x[2] = 0;
     assign bullet_pos_y[2] = 0;
-    assign bullets[2] = 0;
 
     // Single fall counter
     reg [9:0] frame_count; 
@@ -97,9 +96,13 @@ module tt_um_vga_example(
     genvar i;
     generate
         for (i = 0; i < NUM_BULLETS; i = i + 1) begin
-            wire [9:0] dx = (pix_x > bullet_pos_x[i]) ? (pix_x - bullet_pos_x[i]) : (bullet_pos_x[i] - pix_x);
-            wire [9:0] dy = (pix_y > bullet_pos_y[i]) ? (pix_y - bullet_pos_y[i]) : (bullet_pos_y[i] - pix_y);
-            assign bullets[i] = ((dx + dy + ((dx > dy ? dy : dx) >> 1)) <= BULLET_SIZE);
+            if (i == 2) begin
+              assign bullets[i] = 0;
+            end else begin
+              wire [9:0] dx = (pix_x > bullet_pos_x[i]) ? (pix_x - bullet_pos_x[i]) : (bullet_pos_x[i] - pix_x);
+              wire [9:0] dy = (pix_y > bullet_pos_y[i]) ? (pix_y - bullet_pos_y[i]) : (bullet_pos_y[i] - pix_y);
+              assign bullets[i] = ((dx + dy + ((dx > dy ? dy : dx) >> 1)) <= BULLET_SIZE);
+            end
         end
     endgenerate
 
