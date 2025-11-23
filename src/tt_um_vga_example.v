@@ -60,7 +60,7 @@ module tt_um_vga_example(
   reg signed [15:0] curr_u, curr_v;
 
   reg [5:0] speed;
-  reg [3:0] shift;
+  reg [5:0] shift;
 
   always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
@@ -75,7 +75,7 @@ module tt_um_vga_example(
           speed <= speed + 1;
         end
         angle_idx <= angle_idx + speed;
-        shift <= shift + 1;
+        shift <= shift + 3;
       end
 
       if (pix_y == 0 && pix_x == 0) begin
@@ -123,14 +123,14 @@ module tt_um_vga_example(
   wire t_stem = (int_u >= -10 && int_u <= 10) && (int_v >= -30 && int_v <= 30);
   wire in_shape = (t_bar || t_stem) && speed;
 
-  wire [9:0] shift_y = pix_y + shift;
+  wire [9:0] shift_y = pix_y - shift;
 
-  wire [1:0] R = (video_active && in_shape) ? 2'b11 : 
-    ((pix_x[4] ^ shift_y[4]) ? 2'b00 : 2'b01);
-  wire [1:0] G = (video_active && in_shape) ? 2'b11 : 
-    ((int_u[4] ^ shift_y[4]) ? 2'b00 : 2'b01);
-  wire [1:0] B = (video_active && in_shape) ? 2'b01 : 
-    ((int_u[4] ^ shift_y[4]) ? 2'b00 : 2'b01);
+  wire [1:0] R = (in_shape) ? 2'b11 : 
+    ((pix_x[5] ^ shift_y[5]) ? 2'b00 : 2'b01);
+  wire [1:0] G = (in_shape) ? 2'b11 : 
+    ((pix_x[5] ^ shift_y[5]) ? 2'b00 : 2'b01);
+  wire [1:0] B = (in_shape) ? 2'b01 : 
+    ((pix_x[5] ^ shift_y[5]) ? 2'b00 : 2'b01);
 
   assign uo_out = {hsync, B[0], G[0], R[0], vsync, B[1], G[1], R[1]};
   assign uio_out = 0;
