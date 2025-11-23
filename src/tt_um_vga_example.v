@@ -17,6 +17,9 @@ module tt_um_vga_example(
     wire video_active;
     wire [9:0] pix_x, pix_y;
 
+    assign uio_out = 8'b0;
+    assign uio_oe  = 8'b0;
+
     wire _unused_ok = &{ena, ui_in, uio_in, uio_out, uio_oe};
 
     parameter H_ORIGIN = 320;
