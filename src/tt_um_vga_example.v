@@ -96,30 +96,24 @@ module tt_um_vga_example(
         angle_idx <= angle_idx + speed;
       end
 
-      // --- Coordinate Updates ---
-      // Priority 1: Start of Frame (Top-Left)
       if (pix_y == 0 && pix_x == 0) begin
           row_u <= start_u;
           row_v <= start_v;
-          curr_u <= start_u; // Also prep current pixel
+          curr_u <= start_u;
           curr_v <= start_v;
-      end 
-      // Priority 2: Start of Line (Reset X, Step Y)
+      end
       else if (pix_x == 0) begin
-          // Calculate Next Row Start
-          // Moving down in Y implies adding (-sin, cos)
-          row_u <= row_u - {{15{sin_val[8]}}, sin_val}; 
-          row_v <= row_v + {{15{cos_val[8]}}, cos_val};
-          
-          // Reset pixel pointer to the NEW row start
-          curr_u <= row_u - {{15{sin_val[8]}}, sin_val};
-          curr_v <= row_v + {{15{cos_val[8]}}, cos_val};
-      end 
-      // Priority 3: Pixel Step (Step X)
+          // add (-sin, cos)
+          row_u <= row_u - {{7{sin_val[8]}}, sin_val};
+          row_v <= row_v + {{7{cos_val[8]}}, cos_val};
+
+          curr_u <= row_u - {{7{sin_val[8]}}, sin_val};
+          curr_v <= row_v + {{7{cos_val[8]}}, cos_val};
+      end
       else if (video_active) begin
-          // Moving right in X implies adding (cos, sin)
-          curr_u <= curr_u + {{15{cos_val[8]}}, cos_val};
-          curr_v <= curr_v + {{15{sin_val[8]}}, sin_val};
+          // add (cos, sin)
+          curr_u <= curr_u + {{7{cos_val[8]}}, cos_val};
+          curr_v <= curr_v + {{7{sin_val[8]}}, sin_val};
       end
     end
   end
@@ -128,7 +122,7 @@ module tt_um_vga_example(
   wire signed [8:0] int_v = curr_v[15:7];
 
   wire t_bar  = (int_u >= -40 && int_u <= 40) && (int_v >= -50 && int_v <= -30);
-  wire t_stem = (int_u >= -10 && int_u <= 10) && (int_v >= -30 && int_v <=  30);
+  wire t_stem = (int_u >= -10 && int_u <= 10) && (int_v >= -30 && int_v <= 30);
   wire in_shape = (t_bar || t_stem) && speed;
 
   wire [1:0] R = (video_active && in_shape) ? 2'b11 : 2'b00;
