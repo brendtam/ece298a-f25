@@ -64,7 +64,7 @@ module tt_um_vga_example(
 
     assign bullet_pos_x[2] = 0;
     assign bullet_pos_y[2] = 0;
-    bullets[2] = 0;
+    assign bullets[2] = 0;
 
     // Single fall counter
     reg [9:0] frame_count; 
