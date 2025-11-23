@@ -39,7 +39,7 @@ module tt_um_vga_example(
   wire part1 = ((pix_x <= H_ORIGIN + thickness) && (pix_x >= H_ORIGIN - thickness)) &&
     ((pix_y <= V_ORIGIN + thickness) && (pix_y >= (V_ORIGIN - 200) - (thickness<<1)));
   wire part1_outer = ((pix_x <= H_ORIGIN + (thickness<<1)) && (pix_x >= H_ORIGIN - (thickness<<1))) &&
-    ((pix_y <= V_ORIGIN + (thickness<<1)) && (pix_y >= (V_ORIGIN - 200) - (thickness<<2) + (thickness>>1) + 8));
+    ((pix_y <= V_ORIGIN + (thickness<<1)) && (pix_y >= (V_ORIGIN - 200) - (thickness<<2) + (thickness>>1) + (thickness>>2) + 2));
   wire part2 = ((pix_x <= (H_ORIGIN + 100) + thickness) && (pix_x >= H_ORIGIN - thickness)) &&
     ((pix_y <= V_ORIGIN + thickness) && (pix_y >= V_ORIGIN - thickness));
   wire part2_outer = ((pix_x <= (H_ORIGIN + 100) + (thickness<<1)) && (pix_x >= H_ORIGIN - thickness)) &&
@@ -65,7 +65,7 @@ module tt_um_vga_example(
 
   always @(posedge vsync, negedge rst_n) begin
     if (~rst_n) begin
-      thickness <= 0;
+      thickness <= 1;
       counter <= 0;
       state <= 0;
       visible <= 1;
@@ -100,7 +100,7 @@ module tt_um_vga_example(
           if (counter == 0) begin
             state <= 0;
             visible <= 1;
-            thickness <= 0;
+            thickness <= 1;
           end
         end
       endcase
