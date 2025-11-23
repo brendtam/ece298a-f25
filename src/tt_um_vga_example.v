@@ -1,23 +1,19 @@
-/*
- * Copyright (c) 2024 Uri Shaked
- * SPDX-License-Identifier: Apache-2.0
- */
-
 `default_nettype none
 
 module tt_um_vga_example(
-  input  wire [7:0] ui_in,    // Dedicated inputs
-  output wire [7:0] uo_out,   // Dedicated outputs
-  input  wire [7:0] uio_in,   // IOs: Input path
-  output wire [7:0] uio_out,  // IOs: Output path
-  output wire [7:0] uio_oe,   // IOs: Enable path (active high: 0=input, 1=output)
-  input  wire       ena,      // always 1 when the design is powered, so you can ignore it
-  input  wire       clk,      // clock
-  input  wire       rst_n     // reset_n - low to reset
+  input wire [7:0] ui_in,
+  output wire [7:0] uo_out,
+  input wire [7:0] uio_in,
+  output wire [7:0] uio_out,
+  output wire [7:0] uio_oe,
+  input wire ena,
+  input wire clk,
+  input wire rst_n
 );
 
-  // --- VGA Timing ---
-  wire hsync, vsync, video_active;
+  wire hsync;
+  wire vsync;
+  wire video_active;
   wire [9:0] pix_x;
   wire [9:0] pix_y;
 
@@ -31,97 +27,73 @@ module tt_um_vga_example(
     .vpos(pix_y)
   );
 
-  // --- Trig LUT (Scale 128) ---
-  // 1.0 = 128. Range: -128 to 127
-  reg signed [8:0] cos_val; 
-  reg signed [8:0] sin_val; 
-  reg [5:0] angle_idx;
+  reg signed [8:0] cos_val;
+  reg signed [8:0] sin_val;
+  reg [6:0] angle_idx;
 
   always @(*) begin
-    // Using angle_idx[5:1] for 32 total steps (11.25 degrees per step)
-    case(angle_idx[5:1]) 
-      // --- Quadrant 1 (0 to 90 degrees) ---
-      0:  begin cos_val =  128; sin_val =    0; end // 0.00 deg
-      1:  begin cos_val =  127; sin_val =   28; end // 11.25 deg
-      2:  begin cos_val =  122; sin_val =   55; end // 22.50 deg
-      3:  begin cos_val =  113; sin_val =   79; end // 33.75 deg
-      4:  begin cos_val =   99; sin_val =   99; end // 45.00 deg
-      5:  begin cos_val =   79; sin_val =  113; end // 56.25 deg
-      6:  begin cos_val =   55; sin_val =  122; end // 67.50 deg
-      7:  begin cos_val =   28; sin_val =  127; end // 78.75 deg
-      
-      // --- Quadrant 2 (90 to 180 degrees) ---
-      8:  begin cos_val =    0; sin_val =  128; end // 90.00 deg
-      9:  begin cos_val =  -28; sin_val =  127; end // 101.25 deg
-      10: begin cos_val =  -55; sin_val =  122; end // 112.50 deg
-      11: begin cos_val =  -79; sin_val =  113; end // 123.75 deg
-      12: begin cos_val =  -99; sin_val =   99; end // 135.00 deg
-      13: begin cos_val = -113; sin_val =   79; end // 146.25 deg
-      14: begin cos_val = -122; sin_val =   55; end // 157.50 deg
-      15: begin cos_val = -127; sin_val =   28; end // 168.75 deg
-      
-      // --- Quadrant 3 (180 to 270 degrees) ---
-      16: begin cos_val = -128; sin_val =    0; end // 180.00 deg
-      17: begin cos_val = -127; sin_val =  -28; end // 191.25 deg
-      18: begin cos_val = -122; sin_val =  -55; end // 202.50 deg
-      19: begin cos_val = -113; sin_val =  -79; end // 213.75 deg
-      20: begin cos_val =  -99; sin_val =  -99; end // 225.00 deg
-      21: begin cos_val =  -79; sin_val = -113; end // 236.25 deg
-      22: begin cos_val =  -55; sin_val = -122; end // 247.50 deg
-      23: begin cos_val =  -28; sin_val = -127; end // 258.75 deg
-      
-      // --- Quadrant 4 (270 to 360 degrees) ---
-      24: begin cos_val =    0; sin_val = -128; end // 270.00 deg
-      25: begin cos_val =   28; sin_val = -127; end // 281.25 deg
-      26: begin cos_val =   55; sin_val = -122; end // 292.50 deg
-      27: begin cos_val =   79; sin_val = -113; end // 303.75 deg
-      28: begin cos_val =   99; sin_val =  -99; end // 315.00 deg
-      29: begin cos_val =  113; sin_val =  -79; end // 326.25 deg
-      30: begin cos_val =  122; sin_val =  -55; end // 337.50 deg
-      31: begin cos_val =  127; sin_val =  -28; end // 348.75 deg
-      
+    case(angle_idx[6:2])
+      0:  begin cos_val =  128; sin_val =    0; end
+      1:  begin cos_val =  127; sin_val =   28; end
+      2:  begin cos_val =  122; sin_val =   55; end
+      3:  begin cos_val =  113; sin_val =   79; end
+      4:  begin cos_val =   99; sin_val =   99; end
+      5:  begin cos_val =   79; sin_val =  113; end
+      6:  begin cos_val =   55; sin_val =  122; end
+      7:  begin cos_val =   28; sin_val =  127; end
+      8:  begin cos_val =    0; sin_val =  128; end
+      9:  begin cos_val =  -28; sin_val =  127; end
+      10: begin cos_val =  -55; sin_val =  122; end
+      11: begin cos_val =  -79; sin_val =  113; end
+      12: begin cos_val =  -99; sin_val =   99; end
+      13: begin cos_val = -113; sin_val =   79; end
+      14: begin cos_val = -122; sin_val =   55; end
+      15: begin cos_val = -127; sin_val =   28; end
+      16: begin cos_val = -128; sin_val =    0; end
+      17: begin cos_val = -127; sin_val =  -28; end
+      18: begin cos_val = -122; sin_val =  -55; end
+      19: begin cos_val = -113; sin_val =  -79; end
+      20: begin cos_val =  -99; sin_val =  -99; end
+      21: begin cos_val =  -79; sin_val = -113; end
+      22: begin cos_val =  -55; sin_val = -122; end
+      23: begin cos_val =  -28; sin_val = -127; end
+      24: begin cos_val =    0; sin_val = -128; end
+      25: begin cos_val =   28; sin_val = -127; end
+      26: begin cos_val =   55; sin_val = -122; end
+      27: begin cos_val =   79; sin_val = -113; end
+      28: begin cos_val =   99; sin_val =  -99; end
+      29: begin cos_val =  113; sin_val =  -79; end
+      30: begin cos_val =  122; sin_val =  -55; end
+      31: begin cos_val =  127; sin_val =  -28; end
       default: begin cos_val = 128; sin_val = 0; end
     endcase
   end
 
-  // --- Coordinate Mathematics ---
-  // Use 24 bits to be safe. 16 integer, 8 fractional.
-  reg signed [23:0] row_u, row_v;   // Position at start of current line
-  reg signed [23:0] curr_u, curr_v; // Position at current pixel
+  reg signed [15:0] row_u, row_v;
+  reg signed [15:0] curr_u, curr_v;
 
-  // Top-Left Corner Calculation (Frame Start)
-  // We map Screen(0,0) to Texture Space relative to Center(320,240)
-  // X_start = -320, Y_start = -240
-  // cos_val and sin_val are signed [8:0], scale 128
+  wire signed [15:0] cos_320 = (cos_val << 8) + (cos_val << 6);
+  wire signed [15:0] sin_320 = (sin_val << 8) + (sin_val << 6);
+  wire signed [15:0] cos_240 = (cos_val << 8) - (cos_val << 4);
+  wire signed [15:0] sin_240 = (sin_val << 8) - (sin_val << 4);
 
-  // Calculate (-320 * cos_val) and (-240 * cos_val) using shifts and adds
-  // Note: We use the signed version of 320 (and 240) in the math.
-  // Since we are using cos_val/sin_val directly, we use the property:
-  // A * (-B) = -(A * B)
+  wire signed [15:0] start_u = (-cos_320) + sin_240;
+  wire signed [15:0] start_v = (-sin_320) - cos_240;
 
-  // Helper Wires for (Value * Trig_Val) using shifts
-  wire signed [17:0] cos_320 = (cos_val << 8) + (cos_val << 6); // 320 * cos_val
-  wire signed [17:0] sin_320 = (sin_val << 8) + (sin_val << 6); // 320 * sin_val
-  wire signed [17:0] cos_240 = (cos_val << 8) - (cos_val << 4); // 240 * cos_val
-  wire signed [17:0] sin_240 = (sin_val << 8) - (sin_val << 4); // 240 * sin_val
-
-  // start_u = (-320 * cos) - (-240 * sin) = -(320 * cos) + (240 * sin)
-  wire signed [23:0] start_u = (-cos_320) + sin_240; 
-
-  // start_v = (-320 * sin) + (-240 * cos) = -(320 * sin) - (240 * cos)
-  wire signed [23:0] start_v = (-sin_320) - cos_240;
+  reg [5:0] speed;
 
   always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       angle_idx <= 0;
       row_u <= 0; row_v <= 0;
       curr_u <= 0; curr_v <= 0;
+      speed <= 1;
     end else begin
-
-      // 1. Animation Timer: Update Angle EVERY FRAME (Moved from separate vsync block)
-      // Update when the display reaches the last pixel of the active area.
       if (pix_y == 479 && pix_x == 639) begin
-          angle_idx <= angle_idx + 1; 
+        if (angle_idx + speed < angle_idx) begin
+          speed <= speed + 1;
+        end
+        angle_idx <= angle_idx + speed;
       end
 
       // --- Coordinate Updates ---
@@ -152,23 +124,13 @@ module tt_um_vga_example(
     end
   end
 
-  // --- Shape Rendering ---
-  // Slice bits [23:7] to get integer. (Scale 128 = 2^7)
-  wire signed [16:0] int_u = curr_u[23:7];
-  wire signed [16:0] int_v = curr_v[23:7];
+  wire signed [8:0] int_u = curr_u[15:7];
+  wire signed [8:0] int_v = curr_v[15:7];
 
-  // T Shape Logic
   wire t_bar  = (int_u >= -40 && int_u <= 40) && (int_v >= -50 && int_v <= -30);
   wire t_stem = (int_u >= -10 && int_u <= 10) && (int_v >= -30 && int_v <=  30);
-  wire in_shape = t_bar || t_stem;
+  wire in_shape = (t_bar || t_stem) && speed;
 
-  // --- Background Grid (Debug) ---
-  // Draws a faint grid every 32 pixels to verify coordinate stability
-
-  // --- Colors ---
-  // Shape = White (R=11, G=11, B=11)
-  // Grid  = Blue  (R=00, G=00, B=10)
-  // Back  = Black
   wire [1:0] R = (video_active && in_shape) ? 2'b11 : 2'b00;
   wire [1:0] G = (video_active && in_shape) ? 2'b11 : 2'b00;
   wire [1:0] B = (video_active && in_shape) ? 2'b11 : 2'b00;
