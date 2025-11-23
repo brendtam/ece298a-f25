@@ -27,50 +27,97 @@ module tt_um_vga_example(
     .vpos(pix_y)
   );
 
-  reg signed [8:0] cos_val;
-  reg signed [8:0] sin_val;
+  reg signed [15:0] cos_val;
+  reg signed [15:0] sin_val;
   reg [6:0] angle_idx;
 
   reg signed [15:0] start_u;
   reg signed [15:0] start_v;
 
+  always @(*) begin
+    case(angle_idx[6:2])
+      0:  begin cos_val =  128; sin_val =    0; end
+      1:  begin cos_val =  127; sin_val =   28; end
+      2:  begin cos_val =  122; sin_val =   55; end
+      3:  begin cos_val =  113; sin_val =   79; end
+      4:  begin cos_val =   99; sin_val =   99; end
+      5:  begin cos_val =   79; sin_val =  113; end
+      6:  begin cos_val =   55; sin_val =  122; end
+      7:  begin cos_val =   28; sin_val =  127; end
+      8:  begin cos_val =    0; sin_val =  128; end
+      9:  begin cos_val =  -28; sin_val =  127; end
+      10: begin cos_val =  -55; sin_val =  122; end
+      11: begin cos_val =  -79; sin_val =  113; end
+      12: begin cos_val =  -99; sin_val =   99; end
+      13: begin cos_val = -113; sin_val =   79; end
+      14: begin cos_val = -122; sin_val =   55; end
+      15: begin cos_val = -127; sin_val =   28; end
+      16: begin cos_val = -128; sin_val =    0; end
+      17: begin cos_val = -127; sin_val =  -28; end
+      18: begin cos_val = -122; sin_val =  -55; end
+      19: begin cos_val = -113; sin_val =  -79; end
+      20: begin cos_val =  -99; sin_val =  -99; end
+      21: begin cos_val =  -79; sin_val = -113; end
+      22: begin cos_val =  -55; sin_val = -122; end
+      23: begin cos_val =  -28; sin_val = -127; end
+      24: begin cos_val =    0; sin_val = -128; end
+      25: begin cos_val =   28; sin_val = -127; end
+      26: begin cos_val =   55; sin_val = -122; end
+      27: begin cos_val =   79; sin_val = -113; end
+      28: begin cos_val =   99; sin_val =  -99; end
+      29: begin cos_val =  113; sin_val =  -79; end
+      30: begin cos_val =  122; sin_val =  -55; end
+      31: begin cos_val =  127; sin_val =  -28; end
+      default: begin cos_val = 128; sin_val = 0; end
+    endcase
+  end
+
 always @(*) begin
     case(angle_idx[6:2])
-      0:  begin cos_val =  128; sin_val =    0; start_u = 16'sh6000; start_v = 16'sh8000; end
-      1:  begin cos_val =  127; sin_val =   28; start_u = 16'sh9E00; start_v = 16'shF020; end
-      2:  begin cos_val =  122; sin_val =   55; start_u = 16'sh9A00; start_v = 16'shE200; end
-      3:  begin cos_val =  113; sin_val =   79; start_u = 16'sh8D00; start_v = 16'shD200; end
-      4:  begin cos_val =   99; sin_val =   99; start_u = 16'sh8400; start_v = 16'shC300; end
-      5:  begin cos_val =   79; sin_val =  113; start_u = 16'sh6300; start_v = 16'shB400; end
-      6:  begin cos_val =   55; sin_val =  122; start_u = 16'sh4500; start_v = 16'shA600; end
-      7:  begin cos_val =   28; sin_val =  127; start_u = 16'shDE00; start_v = 16'sh9800; end
-      8:  begin cos_val =    0; sin_val =  128; start_u = 16'sh0000; start_v = 16'sh8000; end
-      9:  begin cos_val =  -28; sin_val =  127; start_u = 16'sh2200; start_v = 16'sh9800; end
-      10: begin cos_val =  -55; sin_val =  122; start_u = 16'sh4E00; start_v = 16'shA600; end
-      11: begin cos_val =  -79; sin_val =  113; start_u = 16'sh9D00; start_v = 16'shB400; end
-      12: begin cos_val =  -99; sin_val =   99; start_u = 16'sh7C00; start_v = 16'shC300; end
-      13: begin cos_val = -113; sin_val =   79; start_u = 16'sh7200; start_v = 16'shD200; end
-      14: begin cos_val = -122; sin_val =   55; start_u = 16'sh5E00; start_v = 16'shE200; end
-      15: begin cos_val = -127; sin_val =   28; start_u = 16'sh6200; start_v = 16'shF020; end
-      16: begin cos_val = -128; sin_val =    0; start_u = 16'sh6000; start_v = 16'sh8000; end
-      17: begin cos_val = -127; sin_val =  -28; start_u = 16'sh6200; start_v = 16'sh7FE0; end
-      18: begin cos_val = -122; sin_val =  -55; start_u = 16'sh5E00; start_v = 16'sh1E00; end
-      19: begin cos_val = -113; sin_val =  -79; start_u = 16'sh7200; start_v = 16'sh2E00; end
-      20: begin cos_val =  -99; sin_val =  -99; start_u = 16'sh7C00; start_v = 16'sh3D00; end
-      21: begin cos_val =  -79; sin_val = -113; start_u = 16'sh9D00; start_v = 16'sh4C00; end
-      22: begin cos_val =  -55; sin_val = -122; start_u = 16'sh4E00; start_v = 16'sh5A00; end
-      23: begin cos_val =  -28; sin_val = -127; start_u = 16'sh2200; start_v = 16'sh6800; end
-      24: begin cos_val =    0; sin_val = -128; start_u = 16'sh0000; start_v = 16'sh8000; end
-      25: begin cos_val =   28; sin_val = -127; start_u = 16'shDE00; start_v = 16'sh6800; end
-      26: begin cos_val =   55; sin_val = -122; start_u = 16'sh4500; start_v = 16'sh5A00; end
-      27: begin cos_val =   79; sin_val = -113; start_u = 16'sh6300; start_v = 16'sh4C00; end
-      28: begin cos_val =   99; sin_val =  -99; start_u = 16'sh8400; start_v = 16'sh3D00; end
-      29: begin cos_val =  113; sin_val =  -79; start_u = 16'sh8D00; start_v = 16'sh2E00; end
-      30: begin cos_val =  122; sin_val =  -55; start_u = 16'sh9A00; start_v = 16'sh1E00; end
-      31: begin cos_val =  127; sin_val =  -28; start_u = 16'sh9E00; start_v = 16'sh7FE0; end
-      default: begin cos_val = 128; sin_val = 0; start_u = 16'sh6000; start_v = 16'sh8000; end
+      // Quadrant 1 (approx)
+      0:  begin start_u = -40960; start_v = -30720; end // cos=128, sin=0
+      1:  begin start_u = -33920; start_v = -39440; end // cos=127, sin=28
+      2:  begin start_u = -25840; start_v = -46880; end // cos=122, sin=55
+      3:  begin start_u = -17200; start_v = -52400; end // cos=113, sin=79
+      4:  begin start_u =  -7920; start_v = -55440; end // cos=99,  sin=99
+      5:  begin start_u =   1840; start_v = -55120; end // cos=79,  sin=113
+      6:  begin start_u =  11680; start_v = -52240; end // cos=55,  sin=122
+      7:  begin start_u =  21520; start_v = -47360; end // cos=28,  sin=127
+      
+      // Quadrant 2
+      8:  begin start_u =  30720; start_v = -40960; end // cos=0,   sin=128
+      9:  begin start_u =  39440; start_v = -33920; end // cos=-28, sin=127
+      10: begin start_u =  46880; start_v = -25840; end // cos=-55, sin=122
+      11: begin start_u =  52400; start_v = -17200; end // cos=-79, sin=113
+      12: begin start_u =  55440; start_v =  -7920; end // cos=-99, sin=99
+      13: begin start_u =  55120; start_v =   1840; end // cos=-113,sin=79
+      14: begin start_u =  52240; start_v =  11680; end // cos=-122,sin=55
+      15: begin start_u =  47360; start_v =  21520; end // cos=-127,sin=28
+
+      // Quadrant 3
+      16: begin start_u =  40960; start_v =  30720; end // cos=-128,sin=0
+      17: begin start_u =  33920; start_v =  39440; end // cos=-127,sin=-28
+      18: begin start_u =  25840; start_v =  46880; end // cos=-122,sin=-55
+      19: begin start_u =  17200; start_v =  52400; end // cos=-113,sin=-79
+      20: begin start_u =   7920; start_v =  55440; end // cos=-99, sin=-99
+      21: begin start_u =  -1840; start_v =  55120; end // cos=-79, sin=-113
+      22: begin start_u = -11680; start_v =  52240; end // cos=-55, sin=-122
+      23: begin start_u = -21520; start_v =  47360; end // cos=-28, sin=-127
+
+      // Quadrant 4
+      24: begin start_u = -30720; start_v =  40960; end // cos=0,   sin=-128
+      25: begin start_u = -39440; start_v =  33920; end // cos=28,  sin=-127
+      26: begin start_u = -46880; start_v =  25840; end // cos=55,  sin=-122
+      27: begin start_u = -52400; start_v =  17200; end // cos=79,  sin=-113
+      28: begin start_u = -55440; start_v =   7920; end // cos=99,  sin=-99
+      29: begin start_u = -55120; start_v =  -1840; end // cos=113, sin=-79
+      30: begin start_u = -52240; start_v = -11680; end // cos=122, sin=-55
+      31: begin start_u = -47360; start_v = -21520; end // cos=127, sin=-28
+
+      default: begin start_u = -40960; start_v = -30720; end
     endcase
-end
+  end
+
 
   reg signed [15:0] row_u, row_v;
   reg signed [15:0] curr_u, curr_v;
@@ -103,18 +150,18 @@ end
       else if (pix_x == 0) begin
           // Calculate Next Row Start
           // Moving down in Y implies adding (-sin, cos)
-          row_u <= row_u - {{7{sin_val[8]}}, sin_val}; 
-          row_v <= row_v + {{7{cos_val[8]}}, cos_val};
+          row_u <= row_u - sin_val; 
+          row_v <= row_v + cos_val;
           
           // Reset pixel pointer to the NEW row start
-          curr_u <= row_u - {{7{sin_val[8]}}, sin_val};
-          curr_v <= row_v + {{7{cos_val[8]}}, cos_val};
+          curr_u <= row_u - sin_val;
+          curr_v <= row_v + cos_val;
       end 
       // Priority 3: Pixel Step (Step X)
       else if (video_active) begin
           // Moving right in X implies adding (cos, sin)
-          curr_u <= curr_u + {{7{cos_val[8]}}, cos_val};
-          curr_v <= curr_v + {{7{sin_val[8]}}, sin_val};
+          curr_u <= curr_u + cos_val;
+          curr_v <= curr_v + sin_val;
       end
     end
   end
