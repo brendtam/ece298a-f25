@@ -89,8 +89,10 @@ module tt_um_vga_example(
   always @(posedge vsync, negedge rst_n) begin
     if (~rst_n) begin
       radius <= 0;
+      shift <= 0;
     end else begin
       radius <= radius + 4;
+      shift <= shift + 3;
       if (radius > 400) begin
           radius <= 0;
       end
