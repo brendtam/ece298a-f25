@@ -97,7 +97,9 @@ end
         for (i = 0; i < 8; i=i+1) begin
             wire [9:0] dx = (pix_x > bullet_pos_x[i]) ? (pix_x - bullet_pos_x[i]) : (bullet_pos_x[i] - pix_x);
             wire [9:0] dy = (pix_y > bullet_pos_y[i]) ? (pix_y - bullet_pos_y[i]) : (bullet_pos_y[i] - pix_y);
-            assign bullets[i] = ((dx + dy) <= BULLET_SIZE);
+            // assign bullets[i] = ((dx + dy) <= BULLET_SIZE);
+            wire [9:0] max_d = (dx > dy) ? dx : dy;
+            assign bullets[i] = (max_d + ((dx + dy) >> 2)) <= BULLET_SIZE;
         end
     endgenerate
 
