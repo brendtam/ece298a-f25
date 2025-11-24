@@ -72,7 +72,7 @@ module tt_um_vga_example(
       curr_u <= 0; curr_v <= 0;
       spin_speed <= 1;
     end else if (state[1] && ~state[0]) begin
-      if (pix_y == 479 && pix_x == 639) begin
+      if (pix_y == 480 && pix_x == 640) begin
         if (angle_idx < spin_speed) begin
           spin_speed <= spin_speed + 1;
         end
@@ -82,7 +82,7 @@ module tt_um_vga_example(
           row_u <= 0; row_v <= 0;
           curr_u <= 0; curr_v <= 0;
           spin_speed <= 1;
-          state[0] <= state[0] ^ 1;
+          //state[0] <= state[0] ^ 1;
         end
       end
 
@@ -123,6 +123,7 @@ module tt_um_vga_example(
       end
     end
   end
+  wire t_done = (spin_speed == 0);
 
   wire signed [8:0] int_u = curr_u[15:7];
   wire signed [8:0] int_v = curr_v[15:7];
@@ -188,15 +189,16 @@ module tt_um_vga_example(
             l_state <= 0;
             l_visible <= 1;
             l_thickness <= 1;
-            state[0] <= state[0] ^ 1;
+            //state[0] <= state[0] ^ 1;
           end
         end
       endcase
     end
   end
+  wire l_done = (l_counter == 0 && l_state == 3);
 
   // O
-  reg [9:0] radius;
+  reg [9:0] radius = 1;
   parameter H_ORIGIN = 320;
   parameter V_ORIGIN = 240;
   parameter BULLET_SIZE = 8;
@@ -236,27 +238,27 @@ module tt_um_vga_example(
   reg [2:0] bullet_idx;
   always @(posedge vsync, negedge rst_n) begin
     if (~rst_n) begin
-      radius <= 0;
+      radius <= 1;
       bullet_idx <= 0;
     end else if (state[3] && ~state[0]) begin // expanding O
       if (radius < 70) radius <= radius + 6;
       //else if (radius < 95) radius <= radius + 3;
       else radius <= radius + 3;
       if (radius > 400) begin
-        radius <= 0;
-        state[0] <= state[0] ^ 1;
+        radius <= 1;
+        //state[0] <= state[0] ^ 1;
       end
     end else if (state[4] && ~state[0]) begin // spinning O
       bullet_idx <= bullet_idx + 1;
       radius <= radius + 1;
       if (radius > 400) begin
-        radius <= 0;
+        radius <= 1;
         bullet_idx <= 0;
-        state[0] <= state[0] ^ 1;
+        //state[0] <= state[0] ^ 1;
       end
     end
   end
-
+  wire o_done = (radius > 400);
   wire o_active = ((|bullets) && state[3]) || ((bullets[bullet_idx]) && state[4]);
 
   // background
@@ -289,7 +291,11 @@ module tt_um_vga_example(
       counter <= 0;
     end else begin
       case (state)
-        5'b00010: begin end // T
+        5'b00010: begin // T
+          if (t_done) begin
+            state[0] <= 1;
+          end
+        end
         5'b00011: begin
           counter <= counter + 1;
           if (counter >= 15) begin
@@ -297,7 +303,11 @@ module tt_um_vga_example(
             state <= 5'b00100;
           end
         end
-        5'b00100: begin end // L
+        5'b00100: begin // L
+          if (l_done) begin
+            state[0] <= 1;
+          end
+        end
         5'b00101: begin
           counter <= counter + 1;
           if (counter >= 15) begin
@@ -305,7 +315,11 @@ module tt_um_vga_example(
             state <= 5'b01000;
           end
         end
-        5'b01000: begin end // expanding O
+        5'b01000: begin  // expanding O
+          if (o_done) begin
+            state[0] <= 1;
+          end
+        end
         5'b01001: begin
           counter <= counter + 1;
           if (counter >= 15) begin
@@ -313,7 +327,11 @@ module tt_um_vga_example(
             state <= 5'b10000;
           end
         end
-        5'b10000: begin end // spinning O
+        5'b10000: begin // spinning O
+          if (o_done) begin
+            state[0] <= 1;
+          end
+        end 
         5'b10001: begin
           counter <= counter + 1;
           if (counter >= 15) begin
