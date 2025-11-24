@@ -224,7 +224,6 @@ module tt_um_vga_example(
   assign bullet_pos_x[7] = H_ORIGIN + radius_sqrt2;
   assign bullet_pos_y[7] = V_ORIGIN + radius_sqrt2;
 
-  // expanding O
   genvar i;
   generate
     for (i = 0; i < 8; i = i + 1) begin
@@ -234,10 +233,12 @@ module tt_um_vga_example(
     end
   endgenerate
 
+  reg [2:0] bullet_idx;
   always @(posedge vsync, negedge rst_n) begin
     if (~rst_n) begin
       radius <= 0;
-    end else if (state[3] && ~state[0]) begin
+      bullet_idx <= 0;
+    end else if (state[3] && ~state[0]) begin // expanding O
       if (radius < 70) radius <= radius + 6;
       //else if (radius < 95) radius <= radius + 3;
       else radius <= radius + 3;
@@ -245,16 +246,7 @@ module tt_um_vga_example(
         radius <= 0;
         state[0] <= state[0] ^ 1;
       end
-    end
-  end
-
-  // spinning O
-  reg [2:0] bullet_idx;
-  always @(posedge vsync, negedge rst_n) begin
-    if (~rst_n) begin
-      radius <= 0;
-      bullet_idx <= 0;
-    end else if (state[4] && ~state[0]) begin
+    end else if (state[4] && ~state[0]) begin // spinning O
       bullet_idx <= bullet_idx + 1;
       radius <= radius + 1;
       if (radius > 400) begin
