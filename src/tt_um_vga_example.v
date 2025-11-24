@@ -43,10 +43,10 @@ module tt_um_vga_example(
     wire [9:0] bullet_pos_y [0:7];
     wire [7:0] bullets;
 
-    reg [8:0] eff_shift_x0 = shift_side;
-    reg [8:0] eff_shift_x1 = shift_side;
-    reg [8:0] eff_shift_x2 = shift_side;
-    reg [8:0] eff_shift_x3 = shift_side;
+    reg [8:0] eff_shift_x0;
+    reg [8:0] eff_shift_x1;
+    reg [8:0] eff_shift_x2;
+    reg [8:0] eff_shift_x3;
 
     reg signed [9:0] cur_base_x0 = -62;
     reg signed [9:0] cur_base_x1 = -62;
