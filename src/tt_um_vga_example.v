@@ -25,8 +25,8 @@ module tt_um_vga_example(
     wire [9:0] bullet_pos_y [0:7];
     wire [7:0] bullets;
 
-    localparam signed [9:0] base_x_w [0:3] = '{-100, -72, -50, 0}; //320 - 100, 320 - 72, 320 - 50, 320, 320 is the H_ORIGIN
-    localparam signed [9:0] base_y_w [0:3] = '{0, 48, 100, 50};  //V_ORIGIN is 0
+    localparam signed [9:0] base_x_w[0:3] = '{-100, -72, -50, 0}; //320 - 100, 320 - 72, 320 - 50, 320, 320 is the H_ORIGIN
+    localparam signed [9:0] base_y_w[0:3] = '{0, 48, 100, 50};  //V_ORIGIN is 0
 
     assign uo_out = {hsync, B[0], G[0], R[0], vsync, B[1], G[1], R[1]};
 
@@ -45,13 +45,8 @@ module tt_um_vga_example(
   generate
   for (k = 0; k < 4; k++) begin
     if (k != 3) begin
-      if (k != 1) begin
-        assign bullet_pos_x[k] = H_ORIGIN + base_x_w[k] - shift_side;
-        assign bullet_pos_x[7-k] = H_ORIGIN - base_x_w[k] + shift_side;
-      end else begin
-        assign bullet_pos_x[k] = H_ORIGIN + base_x_w[k] - (shift_side<<1);
-        assign bullet_pos_x[7-k] = H_ORIGIN - base_x_w[k] + (shift_side<<1);
-      end
+      assign bullet_pos_x[k] = H_ORIGIN + base_x_w[k] - shift_side;
+      assign bullet_pos_x[7-k] = H_ORIGIN - base_x_w[k] + shift_side;
     end else begin
       assign bullet_pos_x[k] = H_ORIGIN + base_x_w[k];
     end
@@ -100,7 +95,7 @@ end
             wire [9:0] dx = (pix_x > bullet_pos_x[i]) ? (pix_x - bullet_pos_x[i]) : (bullet_pos_x[i] - pix_x);
             wire [9:0] dy = (pix_y > bullet_pos_y[i]) ? (pix_y - bullet_pos_y[i]) : (bullet_pos_y[i] - pix_y);
             wire [9:0] max_d = (dx > dy) ? dx : dy;
-            assign bullets[i] = ((dx + dy) <= BULLET_SIZE);
+            assign bullets[i] = (max_d + ((dx + dy) >> 2)) <= BULLET_SIZE;
         end
     endgenerate
 
