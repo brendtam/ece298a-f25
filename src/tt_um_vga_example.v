@@ -74,15 +74,13 @@ module tt_um_vga_example(
   assign in_pattern = ((dx + dy - ((dx + dy) >> 2)) <= BULLET_SIZE);
   
   reg [5:0] shift;
-
   wire [9:0] shift_y = pix_y - shift;
-
-assign R = in_shape ? 2'b11 : ((pix_x[5] ^ shift_y[5]) ? 2'b00 : 
-  (video_active ? 2'b01 : 2'b00));
-assign G = in_shape ? 2'b11 : ((pix_x[5] ^ shift_y[5]) ? 2'b00 : 
-  (video_active ? 2'b01 : 2'b00));
-assign B = in_shape ? 2'b01 : ((pix_x[5] ^ shift_y[5]) ? 2'b00 : 
-  (video_active ? 2'b01 : 2'b00));
+  assign R = in_pattern ? 2'b11 : ((pix_x[5] ^ shift_y[5]) ? 2'b00 : 
+    (video_active ? 2'b01 : 2'b00));
+  assign G = in_pattern ? 2'b11 : ((pix_x[5] ^ shift_y[5]) ? 2'b00 : 
+    (video_active ? 2'b01 : 2'b00));
+  assign B = in_pattern ? 2'b01 : ((pix_x[5] ^ shift_y[5]) ? 2'b00 : 
+    (video_active ? 2'b01 : 2'b00)); 
 
   always @(posedge vsync, negedge rst_n) begin
     if (~rst_n) begin
