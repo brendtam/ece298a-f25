@@ -25,8 +25,8 @@ module tt_um_vga_example(
     wire [9:0] bullet_pos_y [0:7];
     wire [7:0] bullets;
 
-    localparam signed [9:0] base_x_w[0:3] = '{-100, -72, -50, 0}; //320 - 100, 320 - 72, 320 - 50, 320, 320 is the H_ORIGIN
-    localparam signed [9:0] base_y_w[0:3] = '{0, 48, 100, 50};  //V_ORIGIN is 0
+    localparam signed [9:0] base_x_w [0:3] = '{-100, -72, -50, 0}; //320 - 100, 320 - 72, 320 - 50, 320, 320 is the H_ORIGIN
+    localparam signed [9:0] base_y_w [0:3] = '{0, 48, 100, 50};  //V_ORIGIN is 0
 
     assign uo_out = {hsync, B[0], G[0], R[0], vsync, B[1], G[1], R[1]};
 
