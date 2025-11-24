@@ -29,7 +29,9 @@ module tt_um_vga_example(
     .hpos(pix_x),
     .vpos(pix_y)
   );
-    
+    assign uio_out = 0;
+     wire _unused_ok = &{ena, ui_in, uio_in};
+  assign uio_oe  = 0;
 
     parameter H_ORIGIN = 320;
     parameter V_ORIGIN = 0;
