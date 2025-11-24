@@ -1,9 +1,14 @@
 `default_nettype none
 
 module tt_um_vga_example(
-    input  wire       clk,
-    input  wire       rst_n,
-    output wire [7:0] uo_out
+  input wire [7:0] ui_in,
+  output wire [7:0] uo_out,
+  input wire [7:0] uio_in,
+  output wire [7:0] uio_out,
+  output wire [7:0] uio_oe,
+  input wire ena,
+  input wire clk,
+  input wire rst_n
 );
 
     // VGA signals
@@ -11,6 +16,11 @@ module tt_um_vga_example(
     wire [1:0] R, G, B;
     wire video_active;
     wire [9:0] pix_x, pix_y;
+
+    assign uo_out = {hsync, B[0], G[0], R[0], vsync, B[1], G[1], R[1]};
+    assign uio_out = 0;
+    assign uio_oe  = 0;
+    wire _unused_ok = &{ena, ui_in, uio_in};
     
 
     parameter H_ORIGIN = 320;
