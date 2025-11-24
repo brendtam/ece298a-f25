@@ -19,7 +19,7 @@ module tt_um_vga_example(
     // parameter NUM_BULLETS = 8;
 
     reg [9:0] fall_y;
-    reg [8:0] shift_side;
+    reg [9:0] shift_side;
 
     wire [9:0] bullet_pos_x [0:7];
     wire [9:0] bullet_pos_y [0:7];
@@ -62,7 +62,7 @@ module tt_um_vga_example(
  
     // Single fall counter, updated on vsync
    reg [9:0] frame_count; // counts vsync frames
-   reg [4:0] fall_speed;
+   reg [9:0] fall_speed;
 
 always @(posedge clk or negedge rst_n) begin
     if (~rst_n) begin
@@ -71,11 +71,13 @@ always @(posedge clk or negedge rst_n) begin
         fall_speed <= 2;
     end else if (vsync) begin
       
-        if (frame_count == 800) begin   // update every 800 clk cycles
+        if (frame_count == 800) begin   // update every 255 clk cycles
             shift_side <= (fall_y < 180) ? 0 : shift_side + 1;
 
             if      (fall_y < 25) fall_speed <= 10;
-            else if (fall_y < 125) fall_speed <= 4;
+            else if (fall_y < 75) fall_speed <= 4;
+            else if (fall_y < 100) fall_speed <= 3;
+            else if (fall_y < 130) fall_speed <= 2;
             else                   fall_speed <= 1;
 
             // Apply movement
@@ -97,9 +99,8 @@ end
         for (i = 0; i < 8; i=i+1) begin
             wire [9:0] dx = (pix_x > bullet_pos_x[i]) ? (pix_x - bullet_pos_x[i]) : (bullet_pos_x[i] - pix_x);
             wire [9:0] dy = (pix_y > bullet_pos_y[i]) ? (pix_y - bullet_pos_y[i]) : (bullet_pos_y[i] - pix_y);
-            // assign bullets[i] = ((dx + dy) <= BULLET_SIZE);
             wire [9:0] max_d = (dx > dy) ? dx : dy;
-            assign bullets[i] = (max_d + ((dx + dy) >> 2)) <= BULLET_SIZE;
+            assign bullets[i] = ((dx + dy) <= BULLET_SIZE);
         end
     endgenerate
 
