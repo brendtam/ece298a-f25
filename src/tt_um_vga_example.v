@@ -140,6 +140,7 @@ always @(posedge clk or negedge rst_n) begin
         frame_count <= 0;
         fall_y <= 0;
         fall_speed <= 2;
+        shift_side <= 0;
     end else if (vsync) begin
       
         if (frame_count == 800) begin   // update every 800 clk cycles
