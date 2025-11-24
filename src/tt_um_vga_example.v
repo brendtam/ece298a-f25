@@ -1,14 +1,9 @@
 `default_nettype none
 
 module tt_um_vga_example(
-  input wire [7:0] ui_in,
-  output wire [7:0] uo_out,
-  input wire [7:0] uio_in,
-  output wire [7:0] uio_out,
-  output wire [7:0] uio_oe,
-  input wire ena,
-  input wire clk,
-  input wire rst_n
+    input  wire       clk,
+    input  wire       rst_n,
+    output wire [7:0] uo_out
 );
 
     // VGA signals
@@ -16,11 +11,6 @@ module tt_um_vga_example(
     wire [1:0] R, G, B;
     wire video_active;
     wire [9:0] pix_x, pix_y;
-
-    assign uo_out = {hsync, B[0], G[0], R[0], vsync, B[1], G[1], R[1]};
-    assign uio_out = 0;
-    assign uio_oe  = 0;
-    wire _unused_ok = &{ena, ui_in, uio_in};
     
 
     parameter H_ORIGIN = 320;
@@ -29,7 +19,7 @@ module tt_um_vga_example(
     // parameter NUM_BULLETS = 8;
 
     reg [9:0] fall_y;
-    reg [8:0] shift_side;
+    reg [9:0] shift_side;
 
     wire [9:0] bullet_pos_x [0:7];
     wire [9:0] bullet_pos_y [0:7];
@@ -71,7 +61,18 @@ module tt_um_vga_example(
     localparam signed [9:0] u_base_y2 = 100;
     localparam signed [9:0] u_base_y3 = 120;
 
-    reg [1:0] pattern_state;
+    // A pattern
+    localparam signed [9:0] a_base_x0 = 0;
+    localparam signed [9:0] a_base_x1 = 0;
+    localparam signed [9:0] a_base_x2 = -30;
+    localparam signed [9:0] a_base_x3 = -75;
+
+    localparam signed [9:0] a_base_y0 = 100;
+    localparam signed [9:0] a_base_y1 = 0;
+    localparam signed [9:0] a_base_y2 = 75;
+    localparam signed [9:0] a_base_y3 = 150;
+
+    reg [2:0] pattern_state;
 
     assign uo_out = {hsync, B[0], G[0], R[0], vsync, B[1], G[1], R[1]};
 
@@ -87,6 +88,21 @@ module tt_um_vga_example(
     );
 
     always @(*) begin
+      //Default
+      cur_base_x0 = 0; 
+      cur_base_x1 = 0; 
+      cur_base_x2 = 0; 
+      cur_base_x3 = 0; 
+
+      cur_base_y0 = 0;
+      cur_base_y1 = 0;
+      cur_base_y2 = 0;
+      cur_base_y3 = 0;
+
+      eff_shift_x0 = 0;
+      eff_shift_x1 = 0;
+      eff_shift_x2 = 0;
+      eff_shift_x3 = 0;
     case(pattern_state)
         0: begin
             cur_base_x0 = u_base_x0; 
@@ -120,12 +136,38 @@ module tt_um_vga_example(
             eff_shift_x2 = (shift_side);
             eff_shift_x3 = 0;
         end
+        2: begin
+          cur_base_x0 = a_base_x0; 
+          cur_base_x1 = a_base_x1; 
+          cur_base_x2 = a_base_x2; 
+          cur_base_x3 = a_base_x3; 
+
+          cur_base_y0 = a_base_y0;
+          cur_base_y1 = a_base_y1;
+          cur_base_y2 = a_base_y2;
+          cur_base_y3 = a_base_y3;
+
+          eff_shift_x0 = 0;
+          eff_shift_x1 = shift_side;
+          eff_shift_x2 = shift_side << 1;
+          eff_shift_x3 = shift_side << 1;
+        end
         // Add more patterns
         default: begin
-            // sel_x0 = 0; sel_y0 = 0;
-            // sel_x1 = 0; sel_y1 = 0;
-            // sel_x2 = 0; sel_y2 = 0;
-            // sel_x3 = 0; sel_y3 = 0;
+            cur_base_x0 = 0; 
+            cur_base_x1 = 0; 
+            cur_base_x2 = 0; 
+            cur_base_x3 = 0; 
+
+            cur_base_y0 = 0;
+            cur_base_y1 = 0;
+            cur_base_y2 = 0;
+            cur_base_y3 = 0;
+
+            eff_shift_x0 = 0;
+            eff_shift_x1 = 0;
+            eff_shift_x2 = 0;
+            eff_shift_x3 = 0;
         end
     endcase
 end
@@ -140,7 +182,6 @@ always @(posedge clk or negedge rst_n) begin
         frame_count <= 0;
         fall_y <= 0;
         fall_speed <= 2;
-        shift_side <= 0;
     end else if (vsync) begin
       
         if (frame_count == 800) begin   // update every 800 clk cycles
@@ -149,7 +190,7 @@ always @(posedge clk or negedge rst_n) begin
             if (shift_side >= 500) begin
                 fall_y <= 0;
                 shift_side <= 0;
-                pattern_state <= (pattern_state == 1) ? 0 : pattern_state + 1;
+                pattern_state <= (pattern_state == 2) ? 0 : pattern_state + 1;
             end else if (fall_y >= 180 && pattern_state == 0) begin
                 fall_y <= fall_y;
             end else begin
@@ -212,9 +253,10 @@ endgenerate
     wire in_pattern = |bullets;
     wire border = ((pix_x <= 10) || (pix_x >= 630)) || ((pix_y <= 10) || (pix_y >= 470));
 
-    assign R = (video_active && (in_pattern || border)) ? 2'b11 : 2'b00;
-    assign G = 2'b00;
-    assign B = (video_active && in_pattern) ? ((border) ? 2'b00 : 2'b11) : 2'b00;
+    assign R = (video_active && (in_pattern || border)) ? 2'b11 : 2'b00;  // max red
+    assign G = (video_active && (in_pattern || border)) ? 2'b10 : 2'b00;  // slightly less green
+    assign B = 2'b00;                                                     // blue off
+
 
 endmodule
 
