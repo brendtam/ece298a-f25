@@ -80,7 +80,7 @@ module tt_um_vga_example(
   end
 endgenerate
 
- 
+ assign bullet_pos_x[4] = 0;
     // Single fall counter, updated on vsync
    reg [9:0] frame_count; // counts vsync frames
    reg [9:0] fall_speed;
@@ -127,6 +127,9 @@ end
 
     wire in_pattern = |bullets;
     wire border = ((pix_x <= 10) || (pix_x >= 630)) || ((pix_y <= 10) || (pix_y >= 470));
+
+    assign uio_out = 0;
+    assign uio_oe  = 0;
 
     assign R = (video_active && (in_pattern || border)) ? 2'b11 : 2'b00;
     assign G = 2'b00;
