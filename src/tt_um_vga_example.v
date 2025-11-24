@@ -30,10 +30,14 @@ module tt_um_vga_example(
     .vpos(pix_y)
   );
 
-  reg [4:0] state;
-  reg [7:0] counter;
+  assign uo_out = {hsync, B[0], G[0], R[0], vsync, B[1], G[1], R[1]};
+  assign uio_out = 0;
+  assign uio_oe  = 0;
+  wire _unused_ok = &{ena, ui_in, uio_in};
 
-  // T
+  reg [2:0] state = 3'b100;
+  reg [5:0] counter;
+
   reg signed [8:0] cos_val;
   reg signed [8:0] sin_val;
   reg signed [15:0] start_u;
@@ -82,7 +86,6 @@ module tt_um_vga_example(
           row_u <= 0; row_v <= 0;
           curr_u <= 0; curr_v <= 0;
           spin_speed <= 1;
-          //state[0] <= state[0] ^ 1;
         end
       end
 
@@ -125,143 +128,124 @@ module tt_um_vga_example(
       angle_idx <= 0;
     end
   end
-  wire t_done = (spin_speed == 0);
+  wire w_done = (spin_speed == 0);
 
   wire signed [8:0] int_u = curr_u[15:7];
   wire signed [8:0] int_v = curr_v[15:7];
 
-  wire t_bar  = (int_u >= -40 && int_u <= 40) && (int_v >= -50 && int_v <= -30);
-  wire t_stem = (int_u >= -10 && int_u <= 10) && (int_v >= -30 && int_v <= 30);
-  wire t_active = (t_bar || t_stem) && state[1];
+  localparam pos4 = -210;
+  localparam pos3 = -210;
+  localparam pos2 = 70;
+  localparam pos = 70;
+  wire Lo = 
+      (int_u >= -60 && int_u <= 80) &&
+      (pix_x >= 128 && pix_x <= 512) &&
+      (int_u + (int_v<<1) >= pos3 && int_u + (int_v<<1) <= pos3+20);
+  wire Li =
+      (int_u >= -60 && int_u <= 80) &&
+      (pix_x >= 128 && pix_x <= 512) &&
+      (int_u - (int_v<<1) >= pos2 && int_u - (int_v<<1) <= pos2+20);
+  wire Ri =
+      (int_u >= -60 && int_u <= 80) &&
+      (pix_x >= 128 && pix_x <= 512) &&
+      (int_u + (int_v<<1) >= pos && int_u + (int_v<<1) <= pos+20);
+  wire Ro =
+      (int_u >= -60 && int_u <= 80) &&
+      (pix_x >= 128 && pix_x <= 512) &&
+      (int_u - (int_v<<1) >= pos4 && int_u - (int_v<<1) <= pos4+20);
+  wire in_shape = (Lo || Li || Ri || Ro) && state[1];
 
-  // L
-  parameter H_ORIGIN_L = 290;
-  parameter V_ORIGIN_L = 340;
-
-  reg [5:0] l_counter = 1;
-  reg [1:0] l_state = 0;
-  reg [4:0] l_thickness = 1;
-  reg l_visible = 1;
-  wire part1 = ((pix_x <= H_ORIGIN_L + l_thickness) && (pix_x >= H_ORIGIN_L - l_thickness)) &&
-    ((pix_y <= V_ORIGIN_L + l_thickness) && (pix_y >= (V_ORIGIN_L - 200) - (l_thickness<<1)));
-  wire part1_outer = ((pix_x <= H_ORIGIN_L + (l_thickness<<1)) && (pix_x >= H_ORIGIN_L - (l_thickness<<1))) &&
-    ((pix_y <= V_ORIGIN_L + (l_thickness<<1)) && (pix_y >= (V_ORIGIN_L - 200) - (l_thickness<<2) + (l_thickness>>1) + (l_thickness>>2) + 2));
-  wire part2 = ((pix_x <= (H_ORIGIN_L + 100) + l_thickness) && (pix_x >= H_ORIGIN_L - l_thickness)) &&
-    ((pix_y <= V_ORIGIN_L + l_thickness) && (pix_y >= V_ORIGIN_L - l_thickness));
-  wire part2_outer = ((pix_x <= (H_ORIGIN_L + 100) + (l_thickness<<1)) && (pix_x >= H_ORIGIN_L - l_thickness)) &&
-    (((pix_y <= V_ORIGIN_L + (l_thickness<<1)) && (pix_y >= V_ORIGIN_L - (l_thickness<<1))));
-  wire l_active = (part1 || part2) && l_visible && state[2];
-  wire l_active_outer = (part1_outer || part2_outer) && l_visible && state[2];
-
-  always @(posedge vsync, negedge rst_n) begin
-    if (~rst_n) begin
-      l_counter <= 1;
-      l_state <= 0;
-      l_thickness <= 1;
-      l_visible <= 1;
-    end else if (state[2] && ~state[0]) begin
-      case (l_state)
-        // thin line
-        2'b00: begin
-          l_counter <= l_counter + 1;
-          if (l_counter == 0) begin
-            l_state <= 1;
-            l_thickness <= 5;
-          end
-        end
-        // blow up
-        2'b01: begin
-          l_thickness <= l_thickness + 2;
-          if (l_thickness >= 15) begin
-            l_state <= 2;
-          end
-        end
-        // stay
-        2'b10: begin    
-          l_counter <= l_counter + 1;
-          if (l_counter == 0) begin
-            l_state <= 3;
-            l_visible <= 0;
-          end
-        end
-        // disappear
-        2'b11: begin
-          l_counter <= l_counter + 1;
-          if (l_counter == 0) begin
-            l_state <= 0;
-            l_visible <= 1;
-            l_thickness <= 1;
-            //state[0] <= state[0] ^ 1;
-          end
-        end
-      endcase
-    end
-  end
-  wire l_done = (l_counter == 0 && l_state == 3);
-
-  // O
-  reg [9:0] radius = 1;
+  // U
   parameter H_ORIGIN = 320;
-  parameter V_ORIGIN = 240;
-  parameter BULLET_SIZE = 8;
+  parameter V_ORIGIN = 0;
+  parameter BULLET_SIZE = 10;
 
+  reg [9:0] fall_y;
+  reg [8:0] shift_side;
+
+  wire [9:0] bullet_pos_x [0:7];
+  wire [9:0] bullet_pos_y [0:7];
   wire [7:0] bullets;
-  wire [9:0] bullet_pos_x [7:0];
-  wire [9:0] bullet_pos_y [7:0];
 
-  wire [9:0] radius_sqrt2 = (radius >> 1) + (radius >> 3) + (radius >> 4) + (radius >> 6);
+  localparam signed [9:0] base_x0 = -62;
+  localparam signed [9:0] base_x1 = -62;
+  localparam signed [9:0] base_x2 = -50;
+  localparam signed [9:0] base_x3 = -18;
 
-  assign bullet_pos_x[0] = H_ORIGIN + radius;
-  assign bullet_pos_y[0] = V_ORIGIN;
-  assign bullet_pos_x[1] = H_ORIGIN + radius_sqrt2;
-  assign bullet_pos_y[1] = V_ORIGIN - radius_sqrt2;
-  assign bullet_pos_x[2] = H_ORIGIN;
-  assign bullet_pos_y[2] = V_ORIGIN - radius;
-  assign bullet_pos_x[3] = H_ORIGIN - radius_sqrt2;
-  assign bullet_pos_y[3] = V_ORIGIN - radius_sqrt2;
-  assign bullet_pos_x[4] = H_ORIGIN - radius;
-  assign bullet_pos_y[4] = V_ORIGIN;
-  assign bullet_pos_x[5] = H_ORIGIN - radius_sqrt2;
-  assign bullet_pos_y[5] = V_ORIGIN + radius_sqrt2;
-  assign bullet_pos_x[6] = H_ORIGIN;
-  assign bullet_pos_y[6] = V_ORIGIN + radius;
-  assign bullet_pos_x[7] = H_ORIGIN + radius_sqrt2;
-  assign bullet_pos_y[7] = V_ORIGIN + radius_sqrt2;
+  localparam signed [9:0] base_y0 = 0;
+  localparam signed [9:0] base_y1 = 48;
+  localparam signed [9:0] base_y2 = 100;
+  localparam signed [9:0] base_y3 = 120;
 
-  genvar i;
+  genvar k;
   generate
-    for (i = 0; i < 8; i = i + 1) begin
-      wire [9:0] dx = (pix_x > bullet_pos_x[i]) ? (pix_x - bullet_pos_x[i]) : (bullet_pos_x[i] - pix_x);
-      wire [9:0] dy = (pix_y > bullet_pos_y[i]) ? (pix_y - bullet_pos_y[i]) : (bullet_pos_y[i] - pix_y);
-      assign bullets[i] = ((dx + dy - ((dx + dy) >> 2)) <= BULLET_SIZE);
+    for (k = 0; k < 4; k = k + 1) begin
+      if (k == 0) begin
+        assign bullet_pos_x[k]   = H_ORIGIN + base_x0 + shift_side;
+        assign bullet_pos_x[7-k] = H_ORIGIN - base_x0 - shift_side;
+        assign bullet_pos_y[k]   = base_y0 + fall_y;
+        assign bullet_pos_y[7-k] = base_y0 + fall_y;
+      end else if (k == 1) begin
+        assign bullet_pos_x[k]   = H_ORIGIN + base_x1 + shift_side;
+        assign bullet_pos_x[7-k] = H_ORIGIN - base_x1 - shift_side;
+        assign bullet_pos_y[k]   = base_y1 + fall_y;
+        assign bullet_pos_y[7-k] = base_y1 + fall_y;
+      end else if (k == 2) begin
+        assign bullet_pos_x[k]   = H_ORIGIN + base_x2 + shift_side;
+        assign bullet_pos_x[7-k] = H_ORIGIN - base_x2 - shift_side;
+        assign bullet_pos_y[k]   = base_y2 + fall_y;
+        assign bullet_pos_y[7-k] = base_y2 + fall_y;
+      end else begin
+        assign bullet_pos_x[k]   = H_ORIGIN + base_x3 + shift_side;
+        assign bullet_pos_x[7-k] = H_ORIGIN - base_x3 - shift_side;
+        assign bullet_pos_y[k]   = base_y3 + fall_y;
+        assign bullet_pos_y[7-k] = base_y3 + fall_y;
+      end
     end
   endgenerate
 
-  reg [2:0] bullet_idx;
-  always @(posedge vsync, negedge rst_n) begin
+  reg [9:0] frame_count;
+  reg [4:0] fall_speed;
+
+  always @(posedge clk or negedge rst_n) begin
     if (~rst_n) begin
-      radius <= 1;
-      bullet_idx <= 0;
-    end else if (state[3] && ~state[0]) begin // expanding O
-      if (radius < 70) radius <= radius + 6;
-      //else if (radius < 95) radius <= radius + 3;
-      else radius <= radius + 3;
-      if (radius > 400) begin
-        radius <= 1;
-        //state[0] <= state[0] ^ 1;
-      end
-    end else if (state[4] && ~state[0]) begin // spinning O
-      bullet_idx <= bullet_idx + 1;
-      radius <= radius + 1;
-      if (radius > 400) begin
-        radius <= 1;
-        bullet_idx <= 0;
-        //state[0] <= state[0] ^ 1;
+      frame_count <= 0;
+      fall_y <= 0;
+      fall_speed <= 2;
+    end else if (vsync && state[2] && ~state[0]) begin
+      if (frame_count == 800) begin   // update every 800 clk cycles
+        shift_side <= (fall_y < 180) ? 0 : shift_side + 1;
+
+        if (shift_side > 500)
+          fall_y <= 0;
+        else if (fall_y >= 180)
+          fall_y <= fall_y;
+        else
+          fall_y <= fall_y + fall_speed;
+
+        if      (fall_y < 25) fall_speed <= 10;
+        else if (fall_y < 125) fall_speed <= 4;
+        else                   fall_speed <= 1;
+        
+        frame_count <= 0;
+      end else begin
+        frame_count <= frame_count + 1;
       end
     end
   end
-  wire o_done = (radius > 400);
-  wire o_active = ((|bullets) && state[3]) || ((bullets[bullet_idx]) && state[4]);
+
+  // Render bullets
+  genvar i;
+  generate
+    for (i = 0; i < 8; i=i+1) begin
+      wire [9:0] dx = (pix_x > bullet_pos_x[i]) ? (pix_x - bullet_pos_x[i]) : (bullet_pos_x[i] - pix_x);
+      wire [9:0] dy = (pix_y > bullet_pos_y[i]) ? (pix_y - bullet_pos_y[i]) : (bullet_pos_y[i] - pix_y);
+      assign bullets[i] = ((dx + dy) <= BULLET_SIZE);
+    end
+  endgenerate
+
+  wire in_pattern = |bullets && state[2];
+  wire u_done = (shift_side > 500);
 
   // background
   reg [5:0] bg_shift;
@@ -274,18 +258,6 @@ module tt_um_vga_example(
     end
   end
 
-  // color
-  assign R = ((video_active) ?
-    ((t_active || l_active || l_active_outer ||o_active) && ~state[0] ? 2'b11 :
-    ((pix_x[5] ^ shift_y[5]) ? 2'b00 : 2'b01)) : 2'b00);
-  assign G = ((video_active) ?
-    ((t_active || l_active || l_active_outer || o_active) && ~state[0] ? 2'b11 :
-    ((pix_x[5] ^ shift_y[5]) ? 2'b00 : 2'b01)) : 2'b00);
-  assign B = ((video_active) ?
-    ((t_active || l_active || o_active) && ~state[0]  ? 2'b01 :
-    (l_active_outer && ~state[0] ? 2'b10 :
-    ((pix_x[5] ^ shift_y[5]) ? 2'b00 : 2'b01))) : 2'b00);
-
   // state
   always @(posedge vsync, negedge rst_n) begin
     if (~rst_n) begin
@@ -293,62 +265,38 @@ module tt_um_vga_example(
       counter <= 0;
     end else begin
       case (state)
-        5'b00010: begin // T
-          if (t_done) begin
-            state[0] <= 1;
+        3'b010: begin // T
+          if (w_done) begin
+            state <= 1;
           end
         end
-        5'b00011: begin
+        3'b001: begin
           counter <= counter + 1;
           if (counter >= 15) begin
             counter <= 0;
-            state <= 5'b00100;
+            state <= 5'b100;
           end
         end
-        5'b00100: begin // L
-          if (l_done) begin
-            state[0] <= 1;
+        3'b100: begin // U
+          if (u_done) begin
+            state <= 1;
           end
         end
-        5'b00101: begin
-          counter <= counter + 1;
-          if (counter >= 15) begin
-            counter <= 0;
-            state <= 5'b01000;
-          end
-        end
-        5'b01000: begin  // expanding O
-          if (o_done) begin
-            state[0] <= 1;
-          end
-        end
-        5'b01001: begin
-          counter <= counter + 1;
-          if (counter >= 15) begin
-            counter <= 0;
-            state <= 5'b10000;
-          end
-        end
-        5'b10000: begin // spinning O
-          if (o_done) begin
-            state[0] <= 1;
-          end
-        end 
-        5'b10001: begin
-          counter <= counter + 1;
-          if (counter >= 15) begin
-            counter <= 0;
-            state <= 5'b00010;
-          end
-        end
-        default: state <= 5'b00010;
+      default: state <= 3'b100;
       endcase
     end
   end
 
-  // output assignments
-  assign uo_out = {hsync, B[0], G[0], R[0], vsync, B[1], G[1], R[1]};
-  assign uio_out = 0;
-  assign uio_oe  = 0;
-  wire _unused_ok = &{ena, ui_in, uio_in};
+  // color
+  assign R = ((video_active) ?
+    ((in_shape || in_pattern) && ~state[0] ? 2'b11 :
+    ((pix_x[5] ^ shift_y[5]) ? 2'b00 : 2'b01)) : 2'b00);
+  assign G = ((video_active) ?
+    ((in_shape || in_pattern) && ~state[0] ? 2'b11 :
+    ((pix_x[5] ^ shift_y[5]) ? 2'b00 : 2'b01)) : 2'b00);
+  assign B = ((video_active) ?
+    ((in_shape || in_pattern) && ~state[0]  ? 2'b01 :
+    (in_shape && ~state[0] ? 2'b10 :
+    ((pix_x[5] ^ shift_y[5]) ? 2'b00 : 2'b01))) : 2'b00);
+
 endmodule
