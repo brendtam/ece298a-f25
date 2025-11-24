@@ -25,8 +25,16 @@ module tt_um_vga_example(
     wire [9:0] bullet_pos_y [0:7];
     wire [7:0] bullets;
 
-    localparam signed [9:0] base_x_w[0:3] = '{-100, -72, -50, 0}; //320 - 100, 320 - 72, 320 - 50, 320, 320 is the H_ORIGIN
-    localparam signed [9:0] base_y_w[0:3] = '{0, 48, 100, 50};  //V_ORIGIN is 0
+    localparam signed [9:0] base_x0 = -100;
+    localparam signed [9:0] base_x1 = -72;
+    localparam signed [9:0] base_x2 = -50;
+    localparam signed [9:0] base_x3 = 0;
+
+    localparam signed [9:0] base_y0 = 0;
+    localparam signed [9:0] base_y1 = 48;
+    localparam signed [9:0] base_y2 = 100;
+    localparam signed [9:0] base_y3 = 50;
+
 
     assign uo_out = {hsync, B[0], G[0], R[0], vsync, B[1], G[1], R[1]};
 
@@ -43,17 +51,30 @@ module tt_um_vga_example(
 
   genvar k;
   generate
-  for (k = 0; k < 4; k++) begin
-    if (k != 3) begin
-      assign bullet_pos_x[k] = H_ORIGIN + base_x_w[k] - shift_side;
-      assign bullet_pos_x[7-k] = H_ORIGIN - base_x_w[k] + shift_side;
+  for (k = 0; k < 4; k = k + 1) begin
+    if (k == 0) begin
+      assign bullet_pos_x[k]   = H_ORIGIN + base_x0 - shift_side;
+      assign bullet_pos_x[7-k] = H_ORIGIN - base_x0 + shift_side;
+      assign bullet_pos_y[k]   = base_y0 + fall_y;
+      assign bullet_pos_y[7-k] = base_y0 + fall_y;
+    end else if (k == 1) begin
+      assign bullet_pos_x[k]   = H_ORIGIN + base_x1 - (shift_side<<1);
+      assign bullet_pos_x[7-k] = H_ORIGIN - base_x1 + (shift_side<<1);
+      assign bullet_pos_y[k]   = base_y1 + fall_y;
+      assign bullet_pos_y[7-k] = base_y1 + fall_y;
+    end else if (k == 2) begin
+      assign bullet_pos_x[k]   = H_ORIGIN + base_x2 - shift_side;
+      assign bullet_pos_x[7-k] = H_ORIGIN - base_x2 + shift_side;
+      assign bullet_pos_y[k]   = base_y2 + fall_y;
+      assign bullet_pos_y[7-k] = base_y2 + fall_y;
     end else begin
-      assign bullet_pos_x[k] = H_ORIGIN + base_x_w[k];
+      assign bullet_pos_x[k]   = H_ORIGIN + base_x3;
+      assign bullet_pos_y[k]   = base_y3 + fall_y;
+      assign bullet_pos_y[7-k] = base_y3 + fall_y;
     end
-    assign bullet_pos_y[k] = base_y_w[k] + fall_y;
-    assign bullet_pos_y[7-k] = base_y_w[k] + fall_y; 
   end
-  endgenerate
+endgenerate
+
  
     // Single fall counter, updated on vsync
    reg [9:0] frame_count; // counts vsync frames
@@ -95,7 +116,7 @@ end
             wire [9:0] dx = (pix_x > bullet_pos_x[i]) ? (pix_x - bullet_pos_x[i]) : (bullet_pos_x[i] - pix_x);
             wire [9:0] dy = (pix_y > bullet_pos_y[i]) ? (pix_y - bullet_pos_y[i]) : (bullet_pos_y[i] - pix_y);
             wire [9:0] max_d = (dx > dy) ? dx : dy;
-            assign bullets[i] = (max_d + ((dx + dy) >> 2)) <= BULLET_SIZE;
+            assign bullets[i] = ((dx + dy) <= BULLET_SIZE);
         end
     endgenerate
 
