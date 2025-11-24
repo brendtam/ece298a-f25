@@ -121,6 +121,8 @@ module tt_um_vga_example(
           curr_v <= curr_v + sin_val;
         end
       end
+    end else if (state[1] && state[0]) begin
+      angle_idx <= 0;
     end
   end
   wire t_done = (spin_speed == 0);
