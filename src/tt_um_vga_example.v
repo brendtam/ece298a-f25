@@ -35,7 +35,7 @@ module tt_um_vga_example(
   assign uio_oe  = 0;
   wire _unused_ok = &{ena, ui_in, uio_in};
 
-  reg [2:0] state = 3'b100;
+  reg [2:0] state;
   reg [5:0] counter;
 
   reg signed [8:0] cos_val;
@@ -69,23 +69,38 @@ module tt_um_vga_example(
     endcase
   end
 
+  reg [7:0] y_offset;
+  wire rotating = (y_offset == 0);
   always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
-      angle_idx <= 0;
+      angle_idx <= 32;
       row_u <= 0; row_v <= 0;
       curr_u <= 0; curr_v <= 0;
       spin_speed <= 1;
+      y_offset <= 127;
     end else if (state[1] && ~state[0]) begin
       if (pix_y == 480 && pix_x == 640) begin
-        if (angle_idx < spin_speed) begin
-          spin_speed <= spin_speed + 1;
+        if (rotating) begin
+          if (angle_idx < spin_speed) begin
+            spin_speed <= spin_speed + 1;
+          end
+          angle_idx <= angle_idx + spin_speed;
+        end else begin
+          if (y_offset <= 0) begin
+            y_offset <= 0;
+          end
+          
+          if (y_offset > 40) y_offset <= y_offset - 6;
+          else if (y_offset > 15) y_offset <= y_offset - 3;
+          else y_offset <= y_offset - 1;
         end
-        angle_idx <= angle_idx + spin_speed;
+
         if (spin_speed == 0) begin
-          angle_idx <= 0;
+          angle_idx <= 32;
           row_u <= 0; row_v <= 0;
           curr_u <= 0; curr_v <= 0;
           spin_speed <= 1;
+          y_offset <= 127;
         end
       end
 
@@ -125,25 +140,24 @@ module tt_um_vga_example(
         end
       end
     end else if (state[1] && state[0]) begin
-      angle_idx <= 0;
+      angle_idx <= 32;
     end
   end
   wire w_done = (spin_speed == 0);
 
-  wire signed [8:0] int_u = curr_u[15:7];
+  wire signed [8:0] int_u = curr_u[15:7] + y_offset;
   wire signed [8:0] int_v = curr_v[15:7];
 
-  localparam pos4 = -210;
-  localparam pos3 = -210;
-  localparam pos2 = 70;
-  localparam pos = 70;
-
-  localparam line_width = 20;
+  localparam pos4 = -400;
+  localparam pos3 = -400;   
+  localparam pos2 = 50;
+  localparam pos = 50;
+  localparam line_width = 60;
 
   wire Lo = 
       (int_u >= -60 && int_u <= 80) &&
       (pix_x >= 128 && pix_x <= 512) &&
-      (int_u + (int_v<<1) >= pos3 && int_u + (int_v<<1) <= pos3+line_width);
+      (int_u + (int_v<<2) >= pos3 && int_u + (int_v<<2) <= pos3+(line_width<<1));
   wire Li =
       (int_u >= -60 && int_u <= 80) &&
       (pix_x >= 128 && pix_x <= 512) &&
@@ -155,7 +169,7 @@ module tt_um_vga_example(
   wire Ro =
       (int_u >= -60 && int_u <= 80) &&
       (pix_x >= 128 && pix_x <= 512) &&
-      (int_u - (int_v<<1) >= pos4 && int_u - (int_v<<1) <= pos4+line_width);
+      (int_u - (int_v<<2) >= pos4 && int_u - (int_v<<2) <= pos4+(line_width<<1));
   wire in_shape = (Lo || Li || Ri || Ro) && state[1];
 
   // U
@@ -264,16 +278,16 @@ module tt_um_vga_example(
   // state
   always @(posedge vsync, negedge rst_n) begin
     if (~rst_n) begin
-      state <= 0;
+      state <= 3'b100; 
       counter <= 0;
     end else begin
       case (state)
-        3'b010: begin // T
+        3'b010: begin // W
           if (w_done) begin
-            state <= 1;
+            state[0] <= 1;
           end
         end
-        3'b001: begin
+        3'b011: begin
           counter <= counter + 1;
           if (counter >= 15) begin
             counter <= 0;
@@ -282,7 +296,14 @@ module tt_um_vga_example(
         end
         3'b100: begin // U
           if (u_done) begin
-            state <= 1;
+            state[0] <= 1;
+          end
+        end
+        3'b101: begin
+          counter <= counter + 1;
+          if (counter >= 5) begin
+            counter <= 0;
+            state <= 5'b010;
           end
         end
       default: state <= 3'b100;
@@ -299,7 +320,6 @@ module tt_um_vga_example(
     ((pix_x[5] ^ shift_y[5]) ? 2'b00 : 2'b01)) : 2'b00);
   assign B = ((video_active) ?
     ((in_shape || in_pattern) && ~state[0]  ? 2'b01 :
-    (in_shape && ~state[0] ? 2'b10 :
-    ((pix_x[5] ^ shift_y[5]) ? 2'b00 : 2'b01))) : 2'b00);
+    ((pix_x[5] ^ shift_y[5]) ? 2'b00 : 2'b01)) : 2'b00);
 
 endmodule
