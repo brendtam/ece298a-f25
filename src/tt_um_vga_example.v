@@ -137,22 +137,25 @@ module tt_um_vga_example(
   localparam pos3 = -210;
   localparam pos2 = 70;
   localparam pos = 70;
+
+  localparam line_width = 20;
+
   wire Lo = 
       (int_u >= -60 && int_u <= 80) &&
       (pix_x >= 128 && pix_x <= 512) &&
-      (int_u + (int_v<<1) >= pos3 && int_u + (int_v<<1) <= pos3+20);
+      (int_u + (int_v<<1) >= pos3 && int_u + (int_v<<1) <= pos3+line_width);
   wire Li =
       (int_u >= -60 && int_u <= 80) &&
       (pix_x >= 128 && pix_x <= 512) &&
-      (int_u - (int_v<<1) >= pos2 && int_u - (int_v<<1) <= pos2+20);
+      (int_u - (int_v<<1) >= pos2 && int_u - (int_v<<1) <= pos2+line_width);
   wire Ri =
       (int_u >= -60 && int_u <= 80) &&
       (pix_x >= 128 && pix_x <= 512) &&
-      (int_u + (int_v<<1) >= pos && int_u + (int_v<<1) <= pos+20);
+      (int_u + (int_v<<1) >= pos && int_u + (int_v<<1) <= pos+line_width);
   wire Ro =
       (int_u >= -60 && int_u <= 80) &&
       (pix_x >= 128 && pix_x <= 512) &&
-      (int_u - (int_v<<1) >= pos4 && int_u - (int_v<<1) <= pos4+20);
+      (int_u - (int_v<<1) >= pos4 && int_u - (int_v<<1) <= pos4+line_width);
   wire in_shape = (Lo || Li || Ri || Ro) && state[1];
 
   // U
