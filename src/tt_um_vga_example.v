@@ -33,7 +33,7 @@ module tt_um_vga_example(
   assign uo_out = {hsync, B[0], G[0], R[0], vsync, B[1], G[1], R[1]};
   assign uio_out = 0;
   assign uio_oe  = 0;
-  wire _unused_ok = &{ena, ui_in, uio_in};
+  wire _unused_ok = &{ena, uio_in};
 
   reg [2:0] state;
   reg [5:0] counter;
@@ -46,6 +46,7 @@ module tt_um_vga_example(
   reg signed [15:0] curr_u, curr_v;
   reg [6:0] angle_idx;
   reg [5:0] spin_speed;
+  wire [1:0] spin_option = {ui_in[0], ui_in[1]};
 
   always @(*) begin
     case(angle_idx[5:2])
@@ -71,20 +72,29 @@ module tt_um_vga_example(
 
   reg [7:0] y_offset;
   wire rotating = (y_offset == 0);
+  reg [3:0] spin_counter;
   always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       angle_idx <= 32;
       row_u <= 0; row_v <= 0;
       curr_u <= 0; curr_v <= 0;
       spin_speed <= 1;
+      spin_counter <= 1;
       y_offset <= 127;
     end else if (state[1] && ~state[0]) begin
       if (pix_y == 480 && pix_x == 640) begin
         if (rotating) begin
-          if (angle_idx < spin_speed) begin
-            spin_speed <= spin_speed + 1;
+          if (spin_option == 0) begin
+            if (angle_idx < spin_speed) begin
+              spin_speed <= spin_speed + 1;
+            end
+            angle_idx <= angle_idx + spin_speed;
+          end else begin
+            if ((angle_idx -32) < spin_option) begin
+              spin_counter <= spin_counter + 1;
+            end
+            angle_idx <= angle_idx + (1<<spin_option);
           end
-          angle_idx <= angle_idx + spin_speed;
         end else begin
           if (y_offset <= 0) begin
             y_offset <= 0;
@@ -95,11 +105,12 @@ module tt_um_vga_example(
           else y_offset <= y_offset - 1;
         end
 
-        if (spin_speed == 0) begin
+        if (spin_speed == 0 || spin_counter == 0) begin
           angle_idx <= 32;
           row_u <= 0; row_v <= 0;
           curr_u <= 0; curr_v <= 0;
           spin_speed <= 1;
+          spin_counter <= 1;
           y_offset <= 127;
         end
       end
@@ -141,9 +152,10 @@ module tt_um_vga_example(
       end
     end else if (state[1] && state[0]) begin
       angle_idx <= 32;
+      y_offset <= 127;
     end
   end
-  wire w_done = (spin_speed == 0);
+  wire w_done = (spin_speed == 0 || spin_counter == 0);
 
   wire signed [8:0] int_u = curr_u[15:7] + y_offset;
   wire signed [8:0] int_v = curr_v[15:7];
