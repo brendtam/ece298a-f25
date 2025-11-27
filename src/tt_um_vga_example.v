@@ -281,13 +281,6 @@ module tt_um_vga_example(
         end
         STATE_W: begin // W
           if (w_done) begin
-            state <= STATE_BLANK;
-          end
-        end
-        STATE_BLANK: begin // W -> U
-          counter <= counter + 1;
-          if (counter >= 15) begin
-            counter <= 0;
             state <= STATE_U;
           end
         end
