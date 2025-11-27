@@ -35,7 +35,7 @@ module tt_um_vga_example(
   assign uio_oe  = 0;
   wire _unused_ok = &{ena, ui_in, uio_in};
 
-  reg [2:0] state = 3'b100;
+  reg [1:0] state;
   reg [5:0] counter;
 
   reg signed [8:0] cos_val;
@@ -78,7 +78,7 @@ module tt_um_vga_example(
       row_u <= 0; row_v <= 0;
       curr_u <= 0; curr_v <= 0;
       spin_speed <= 1;
-    end else if (state[1] && ~state[0]) begin
+    end else if (state == 1) begin
       if (pix_y == 480 && pix_x == 640) begin
         if (angle_idx < spin_speed) begin
           spin_speed <= spin_speed + 1;
@@ -127,7 +127,7 @@ module tt_um_vga_example(
           curr_v <= curr_v + sin_val;
         end
       end
-    end else if (state[1] && state[0]) begin
+    end else if (state == 2) begin
       angle_idx <= 0;
     end
   end
@@ -159,7 +159,7 @@ module tt_um_vga_example(
       (int_u >= -60 && int_u <= 80) &&
       (pix_x >= 128 && pix_x <= 512) &&
       (int_u - (int_v<<1) >= pos4 && int_u - (int_v<<1) <= pos4+line_width);
-  wire in_shape = (Lo || Li || Ri || Ro) && state[1];
+  wire in_shape = (Lo || Li || Ri || Ro) && state == 1;
 
   // U
   parameter H_ORIGIN = 320;
@@ -218,7 +218,7 @@ module tt_um_vga_example(
       frame_count <= 0;
       fall_y <= 0;
       fall_speed <= 2;
-    end else if (vsync && state[2] && ~state[0]) begin
+    end else if (vsync && state == 0) begin
       if (frame_count == 500) begin
         shift_side <= (fall_y < 180) ? 0 : shift_side + 1;
 
@@ -251,7 +251,7 @@ module tt_um_vga_example(
     end
   endgenerate
 
-  wire in_pattern = |bullets && state[2];
+  wire in_pattern = |bullets && state == 0;
   wire u_done = (shift_side > 500);
 
   // background
@@ -272,37 +272,37 @@ module tt_um_vga_example(
       counter <= 0;
     end else begin
       case (state)
-        3'b010: begin // W
-          if (w_done) begin
+        0: begin // U
+          if (u_done) begin
             state <= 1;
           end
         end
-        3'b001: begin // W -> U
-          counter <= counter + 1;
-          if (counter >= 15) begin
-            counter <= 0;
-            state <= 5'b100;
-          end
-        end
-        3'b100: begin // U
-          if (u_done) begin
+        1: begin // W
+          if (w_done) begin
             state <= 2;
           end
         end
-      default: state <= 3'b100;
+        2: begin // W -> U
+          counter <= counter + 1;
+          if (counter >= 15) begin
+            counter <= 0;
+            state <= 0;
+          end
+        end
+      default: state <= 0;
       endcase
     end
   end
 
   // color
   assign R = ((video_active) ?
-    ((in_shape || in_pattern) && ~state[0] ? 2'b11 :
+    ((in_shape || in_pattern) ? 2'b11 :
     ((pix_x[5] ^ shift_y[5]) ? 2'b00 : 2'b01)) : 2'b00);
   assign G = ((video_active) ?
-    ((in_shape || in_pattern) && ~state[0] ? 2'b11 :
+    ((in_shape || in_pattern) ? 2'b11 :
     ((pix_x[5] ^ shift_y[5]) ? 2'b00 : 2'b01)) : 2'b00);
   assign B = ((video_active) ?
-    ((in_shape || in_pattern) && ~state[0]  ? 2'b01 :
+    ((in_shape || in_pattern)  ? 2'b01 :
     ((pix_x[5] ^ shift_y[5]) ? 2'b00 : 2'b01)) : 2'b00);
 
 endmodule
