@@ -47,6 +47,9 @@ module tt_um_vga_example(
   reg [6:0] angle_idx;
   reg [5:0] spin_speed;
 
+  // check switch order on board
+  wire [1:0] spin_option = {ui_in[0], ui_in[1]};
+
   always @(*) begin
     case(angle_idx[5:2])
       0:  begin cos_val =  128; sin_val =    0; start_u = -40960; start_v = -30720; end
@@ -189,8 +192,8 @@ module tt_um_vga_example(
         assign bullet_pos_y[k]   = base_y0 + fall_y;
         assign bullet_pos_y[7-k] = base_y0 + fall_y;
       end else if (k == 1) begin
-        assign bullet_pos_x[k]   = H_ORIGIN + base_x1 + shift_side;
-        assign bullet_pos_x[7-k] = H_ORIGIN - base_x1 - shift_side;
+        assign bullet_pos_x[k]   = H_ORIGIN + base_x1 + (shift_side);
+        assign bullet_pos_x[7-k] = H_ORIGIN - base_x1 - (shift_side);
         assign bullet_pos_y[k]   = base_y1 + fall_y;
         assign bullet_pos_y[7-k] = base_y1 + fall_y;
       end else if (k == 2) begin
@@ -199,8 +202,8 @@ module tt_um_vga_example(
         assign bullet_pos_y[k]   = base_y2 + fall_y;
         assign bullet_pos_y[7-k] = base_y2 + fall_y;
       end else begin
-        assign bullet_pos_x[k]   = H_ORIGIN + base_x3 + shift_side;
-        assign bullet_pos_x[7-k] = H_ORIGIN - base_x3 - shift_side;
+        assign bullet_pos_x[k]   = H_ORIGIN + base_x3 + (shift_side>>1);
+        assign bullet_pos_x[7-k] = H_ORIGIN - base_x3 - (shift_side>>1);
         assign bullet_pos_y[k]   = base_y3 + fall_y;
         assign bullet_pos_y[7-k] = base_y3 + fall_y;
       end
@@ -216,15 +219,16 @@ module tt_um_vga_example(
       fall_y <= 0;
       fall_speed <= 2;
     end else if (vsync && state[2] && ~state[0]) begin
-      if (frame_count == 800) begin   // update every 800 clk cycles
+      if (frame_count == 500) begin
         shift_side <= (fall_y < 180) ? 0 : shift_side + 1;
 
-        if (shift_side > 500)
+        if (shift_side > 500) begin
           fall_y <= 0;
-        else if (fall_y >= 180)
+        end else if (fall_y >= 180 && shift_side <= 300) begin
           fall_y <= fall_y;
-        else
+        end else begin
           fall_y <= fall_y + fall_speed;
+        end
 
         if      (fall_y < 25) fall_speed <= 10;
         else if (fall_y < 125) fall_speed <= 4;
@@ -273,7 +277,7 @@ module tt_um_vga_example(
             state <= 1;
           end
         end
-        3'b001: begin
+        3'b011: begin // W -> U
           counter <= counter + 1;
           if (counter >= 15) begin
             counter <= 0;
@@ -282,7 +286,14 @@ module tt_um_vga_example(
         end
         3'b100: begin // U
           if (u_done) begin
-            state <= 1;
+            state[0] <= 1;
+          end
+        end
+        3'b101: begin // U -> W
+          counter <= counter + 1;
+          if (counter >= 15) begin
+            counter <= 0;
+            state <= 5'b010;
           end
         end
       default: state <= 3'b100;
