@@ -274,19 +274,19 @@ module tt_um_vga_example(
       case (state)
         3'b010: begin // W
           if (w_done) begin
-            state <= 3'b001;
+            state <= 1;
           end
         end
         3'b001: begin // W -> U
           counter <= counter + 1;
           if (counter >= 15) begin
             counter <= 0;
-            state <= 3'b100;
+            state <= 5'b100;
           end
         end
         3'b100: begin // U
           if (u_done) begin
-            state <= 3'b010;
+            state <= 1;
           end
         end
       default: state <= 3'b100;
