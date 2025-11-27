@@ -47,7 +47,7 @@ module tt_um_vga_example(
   reg signed [15:0] row_u, row_v;
   reg signed [15:0] curr_u, curr_v;
   reg [6:0] angle_idx;
-  reg [5:0] spin_speed;
+  reg [3:0] spin_speed;
 
   // check switch order on board
   wire [1:0] spin_option = {ui_in[0], ui_in[1]};
@@ -82,10 +82,10 @@ module tt_um_vga_example(
       spin_speed <= 1;
     end else if (state == STATE_W) begin
       if (pix_y == 480 && pix_x == 640) begin
-        if (angle_idx < spin_speed) begin
+        if (angle_idx < 6) begin
           spin_speed <= spin_speed + 1;
         end
-        angle_idx <= angle_idx + spin_speed;
+        angle_idx <= angle_idx + 6;
         if (spin_speed == 0) begin
           angle_idx <= 0;
           row_u <= 0; row_v <= 0;
