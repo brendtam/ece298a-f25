@@ -41,6 +41,9 @@ module tt_um_vga_example(
     localparam signed [9:0] base_y3 = 120;
 
     assign uo_out = {hsync, B[0], G[0], R[0], vsync, B[1], G[1], R[1]};
+  assign uio_out = 0;
+  assign uio_oe  = 0;
+  wire _unused_ok = &{ena, ui_in, uio_in};
 
     // Simple VGA generator
     hvsync_generator hvsync_gen (
