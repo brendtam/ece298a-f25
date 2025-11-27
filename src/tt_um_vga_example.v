@@ -272,21 +272,21 @@ module tt_um_vga_example(
       counter <= 0;
     end else begin
       case (state)
-        3'b010: begin // T
+        3'b010: begin // W
           if (w_done) begin
-            state <= 1;
+            state <= 3'b001;
           end
         end
         3'b001: begin // W -> U
           counter <= counter + 1;
           if (counter >= 15) begin
             counter <= 0;
-            state <= 5'b100;
+            state <= 3'b100;
           end
         end
         3'b100: begin // U
           if (u_done) begin
-            state <= 1;
+            state <= 3'b010;
           end
         end
       default: state <= 3'b100;
@@ -303,7 +303,6 @@ module tt_um_vga_example(
     ((pix_x[5] ^ shift_y[5]) ? 2'b00 : 2'b01)) : 2'b00);
   assign B = ((video_active) ?
     ((in_shape || in_pattern) && ~state[0]  ? 2'b01 :
-    (in_shape && ~state[0] ? 2'b10 :
-    ((pix_x[5] ^ shift_y[5]) ? 2'b00 : 2'b01))) : 2'b00);
+    ((pix_x[5] ^ shift_y[5]) ? 2'b00 : 2'b01)) : 2'b00);
 
 endmodule
