@@ -295,14 +295,15 @@ module tt_um_vga_example(
   end
 
   // color
+  wire valid = in_shape || in_pattern;
   assign R = ((video_active) ?
-    ((in_shape || in_pattern) ? 2'b11 :
+    ((valid) ? 2'b11 :
     ((pix_x[5] ^ shift_y[5]) ? 2'b00 : 2'b01)) : 2'b00);
   assign G = ((video_active) ?
-    ((in_shape || in_pattern) ? 2'b11 :
+    ((valid) ? 2'b11 :
     ((pix_x[5] ^ shift_y[5]) ? 2'b00 : 2'b01)) : 2'b00);
   assign B = ((video_active) ?
-    ((in_shape || in_pattern)  ? 2'b01 :
+    ((valid)  ? 2'b01 :
     ((pix_x[5] ^ shift_y[5]) ? 2'b00 : 2'b01)) : 2'b00);
 
 endmodule
