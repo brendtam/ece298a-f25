@@ -295,35 +295,28 @@ module tt_um_vga_example(
   // state
   always @(posedge vsync, negedge rst_n) begin
     if (~rst_n) begin
-      state <= 3'b100; 
+      state <= 3'b010; 
       counter <= 0;
     end else begin
       case (state)
         3'b010: begin // W
           if (w_done) begin
-            state[0] <= 1;
+            state <= 3'b001;
           end
         end
-        3'b011: begin // W -> U
+        3'b001: begin // W -> U
           counter <= counter + 1;
           if (counter >= 15) begin
             counter <= 0;
-            state <= 5'b100;
+            state <= 3'b100;
           end
         end
         3'b100: begin // U
           if (u_done) begin
-            state[0] <= 1;
+            state <= 3'b010;
           end
         end
-        3'b101: begin // U -> W
-          counter <= counter + 1;
-          if (counter >= 15) begin
-            counter <= 0;
-            state <= 5'b010;
-          end
-        end
-      default: state <= 3'b100;
+      default: state <= 3'b010;
       endcase
     end
   end
