@@ -35,12 +35,10 @@ module tt_um_vga_example(
   assign uio_oe  = 0;
   wire _unused_ok = &{ena, ui_in, uio_in};
 
-  reg [1:0] state;
-  reg [5:0] counter;
+  reg state;
 
-  localparam [1:0] STATE_U = 0;
-  localparam [1:0] STATE_W = 1;
-  localparam [1:0] STATE_BLANK = 2;
+  localparam STATE_U = 0;
+  localparam STATE_W = 1;
  
   reg signed [8:0] cos_val;
   reg signed [8:0] sin_val;
@@ -187,30 +185,30 @@ module tt_um_vga_example(
 
   genvar k;
   generate
-    for (k = 0; k < 4; k = k + 1) begin
-      if (k == 0) begin
-        assign bullet_pos_x[k]   = H_ORIGIN + base_x0 + shift_side;
-        assign bullet_pos_x[7-k] = H_ORIGIN - base_x0 - shift_side;
-        assign bullet_pos_y[k]   = base_y0 + fall_y;
-        assign bullet_pos_y[7-k] = base_y0 + fall_y;
-      end else if (k == 1) begin
-        assign bullet_pos_x[k]   = H_ORIGIN + base_x1 + (shift_side);
-        assign bullet_pos_x[7-k] = H_ORIGIN - base_x1 - (shift_side);
-        assign bullet_pos_y[k]   = base_y1 + fall_y;
-        assign bullet_pos_y[7-k] = base_y1 + fall_y;
-      end else if (k == 2) begin
-        assign bullet_pos_x[k]   = H_ORIGIN + base_x2 + shift_side;
-        assign bullet_pos_x[7-k] = H_ORIGIN - base_x2 - shift_side;
-        assign bullet_pos_y[k]   = base_y2 + fall_y;
-        assign bullet_pos_y[7-k] = base_y2 + fall_y;
-      end else begin
-        assign bullet_pos_x[k]   = H_ORIGIN + base_x3 + (shift_side>>1);
-        assign bullet_pos_x[7-k] = H_ORIGIN - base_x3 - (shift_side>>1);
-        assign bullet_pos_y[k]   = base_y3 + fall_y;
-        assign bullet_pos_y[7-k] = base_y3 + fall_y;
-      end
+  for (k = 0; k < 4; k = k + 1) begin
+    if (k == 0) begin
+      assign bullet_pos_x[k]   = H_ORIGIN + base_x0 + shift_side;
+      assign bullet_pos_x[7-k] = H_ORIGIN - base_x0 - shift_side;
+      assign bullet_pos_y[k]   = base_y0 + fall_y;
+      assign bullet_pos_y[7-k] = base_y0 + fall_y;
+    end else if (k == 1) begin
+      assign bullet_pos_x[k]   = H_ORIGIN + base_x1 + shift_side;
+      assign bullet_pos_x[7-k] = H_ORIGIN - base_x1 - shift_side;
+      assign bullet_pos_y[k]   = base_y1 + fall_y;
+      assign bullet_pos_y[7-k] = base_y1 + fall_y;
+    end else if (k == 2) begin
+      assign bullet_pos_x[k]   = H_ORIGIN + base_x2 + shift_side;
+      assign bullet_pos_x[7-k] = H_ORIGIN - base_x2 - shift_side;
+      assign bullet_pos_y[k]   = base_y2 + fall_y;
+      assign bullet_pos_y[7-k] = base_y2 + fall_y;
+    end else begin
+      assign bullet_pos_x[k]   = H_ORIGIN + base_x3 + shift_side;
+      assign bullet_pos_x[7-k] = H_ORIGIN - base_x3 - shift_side;
+      assign bullet_pos_y[k]   = base_y3 + fall_y;
+      assign bullet_pos_y[7-k] = base_y3 + fall_y;
     end
-  endgenerate
+  end
+endgenerate
 
   reg [9:0] frame_count;
   reg [4:0] fall_speed;
@@ -220,28 +218,27 @@ module tt_um_vga_example(
       frame_count <= 0;
       fall_y <= 0;
       fall_speed <= 2;
-    end else if (vsync && state == STATE_U) begin
-      if (frame_count == 500) begin
-        shift_side <= (fall_y < 180) ? 0 : shift_side + 1;
+    end else if (vsync) begin
+        if (frame_count == 800) begin
+          shift_side <= (fall_y < 180) ? 0 : shift_side + 1;
 
-        if (shift_side > 500) begin
-          fall_y <= 0;
-        end else if (fall_y >= 180 && shift_side <= 300) begin
-          fall_y <= fall_y;
+          if (shift_side > 500)
+            fall_y <= 0;
+          else if (fall_y >= 180)
+            fall_y <= fall_y;
+          else
+            fall_y <= fall_y + fall_speed;
+
+          if      (fall_y < 25) fall_speed <= 10;
+          else if (fall_y < 125) fall_speed <= 4;
+          else                   fall_speed <= 1;
+          frame_count <= 0;
         end else begin
-          fall_y <= fall_y + fall_speed;
+          frame_count <= frame_count + 1;
         end
-
-        if      (fall_y < 25) fall_speed <= 10;
-        else if (fall_y < 125) fall_speed <= 4;
-        else                   fall_speed <= 1;
-        
-        frame_count <= 0;
-      end else begin
-        frame_count <= frame_count + 1;
-      end
     end
   end
+
 
   // Render bullets
   genvar i;
@@ -271,7 +268,6 @@ module tt_um_vga_example(
   always @(posedge vsync, negedge rst_n) begin
     if (~rst_n) begin
       state <= STATE_U;
-      counter <= 0;
     end else begin
       case (state)
         STATE_U: begin // U
