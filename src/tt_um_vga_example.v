@@ -34,11 +34,6 @@ module tt_um_vga_example(
   assign uio_out = 0;
   assign uio_oe  = 0;
   wire _unused_ok = &{ena, ui_in, uio_in};
-
-  reg state;
-
-  localparam STATE_U = 0;
-  localparam STATE_W = 1;
  
   reg signed [8:0] cos_val;
   reg signed [8:0] sin_val;
@@ -80,7 +75,7 @@ module tt_um_vga_example(
       row_u <= 0; row_v <= 0;
       curr_u <= 0; curr_v <= 0;
       spin_speed <= 1;
-    end else if (state == STATE_W) begin
+    end else begin
       if (pix_y == 480 && pix_x == 640) begin
         if (angle_idx < 6) begin
           spin_speed <= spin_speed + 1;
@@ -159,99 +154,7 @@ module tt_um_vga_example(
       (int_u >= -60 && int_u <= 80) &&
       (pix_x >= 128 && pix_x <= 512) &&
       (int_u - (int_v<<1) >= pos4 && int_u - (int_v<<1) <= pos4+line_width);
-  wire in_shape = (Lo || Li || Ri || Ro) && state == STATE_W;
-
-  // U
-  parameter H_ORIGIN = 320;
-  parameter V_ORIGIN = 0;
-  parameter BULLET_SIZE = 10;
-
-  reg [9:0] fall_y;
-  reg [8:0] shift_side;
-
-  wire [9:0] bullet_pos_x [0:7];
-  wire [9:0] bullet_pos_y [0:7];
-  wire [7:0] bullets;
-
-  localparam signed [9:0] base_x0 = -62;
-  localparam signed [9:0] base_x1 = -62;
-  localparam signed [9:0] base_x2 = -50;
-  localparam signed [9:0] base_x3 = -18;
-
-  localparam signed [9:0] base_y0 = 0;
-  localparam signed [9:0] base_y1 = 48;
-  localparam signed [9:0] base_y2 = 100;
-  localparam signed [9:0] base_y3 = 120;
-
-  genvar k;
-  generate
-  for (k = 0; k < 4; k = k + 1) begin
-    if (k == 0) begin
-      assign bullet_pos_x[k]   = H_ORIGIN + base_x0 + shift_side;
-      assign bullet_pos_x[7-k] = H_ORIGIN - base_x0 - shift_side;
-      assign bullet_pos_y[k]   = base_y0 + fall_y;
-      assign bullet_pos_y[7-k] = base_y0 + fall_y;
-    end else if (k == 1) begin
-      assign bullet_pos_x[k]   = H_ORIGIN + base_x1 + shift_side;
-      assign bullet_pos_x[7-k] = H_ORIGIN - base_x1 - shift_side;
-      assign bullet_pos_y[k]   = base_y1 + fall_y;
-      assign bullet_pos_y[7-k] = base_y1 + fall_y;
-    end else if (k == 2) begin
-      assign bullet_pos_x[k]   = H_ORIGIN + base_x2 + shift_side;
-      assign bullet_pos_x[7-k] = H_ORIGIN - base_x2 - shift_side;
-      assign bullet_pos_y[k]   = base_y2 + fall_y;
-      assign bullet_pos_y[7-k] = base_y2 + fall_y;
-    end else begin
-      assign bullet_pos_x[k]   = H_ORIGIN + base_x3 + shift_side;
-      assign bullet_pos_x[7-k] = H_ORIGIN - base_x3 - shift_side;
-      assign bullet_pos_y[k]   = base_y3 + fall_y;
-      assign bullet_pos_y[7-k] = base_y3 + fall_y;
-    end
-  end
-endgenerate
-
-  reg [9:0] frame_count;
-  reg [4:0] fall_speed;
-
-  always @(posedge clk or negedge rst_n) begin
-    if (~rst_n) begin
-      frame_count <= 0;
-      fall_y <= 0;
-      fall_speed <= 2;
-    end else if (vsync) begin
-        if (frame_count == 800) begin
-          shift_side <= (fall_y < 180) ? 0 : shift_side + 1;
-
-          if (shift_side > 500)
-            fall_y <= 0;
-          else if (fall_y >= 180)
-            fall_y <= fall_y;
-          else
-            fall_y <= fall_y + fall_speed;
-
-          if      (fall_y < 25) fall_speed <= 10;
-          else if (fall_y < 125) fall_speed <= 4;
-          else                   fall_speed <= 1;
-          frame_count <= 0;
-        end else begin
-          frame_count <= frame_count + 1;
-        end
-    end
-  end
-
-
-  // Render bullets
-  genvar i;
-  generate
-    for (i = 0; i < 8; i=i+1) begin
-      wire [9:0] dx = (pix_x > bullet_pos_x[i]) ? (pix_x - bullet_pos_x[i]) : (bullet_pos_x[i] - pix_x);
-      wire [9:0] dy = (pix_y > bullet_pos_y[i]) ? (pix_y - bullet_pos_y[i]) : (bullet_pos_y[i] - pix_y);
-      assign bullets[i] = ((dx + dy) <= BULLET_SIZE);
-    end
-  endgenerate
-
-  wire in_pattern = |bullets && state == STATE_U;
-  wire u_done = (shift_side > 500);
+  wire in_shape = (Lo || Li || Ri || Ro);
 
   // background
   reg [5:0] bg_shift;
@@ -264,28 +167,8 @@ endgenerate
     end
   end
 
-  // state
-  always @(posedge vsync, negedge rst_n) begin
-    if (~rst_n) begin
-      state <= STATE_U;
-    end else begin
-      case (state)
-        STATE_U: begin // U
-          if (u_done) begin
-            state <= STATE_W;
-          end
-        end
-        STATE_W: begin // W
-          if (w_done) begin
-            state <= STATE_U;
-          end
-        end
-      endcase
-    end
-  end
-
   // color
-  wire valid = in_shape || in_pattern;
+  wire valid = in_shape;
   wire checkerboard = pix_x[5] ^ shift_y[5];
   assign R = ((video_active) ?
     ((valid) ? 2'b11 :
