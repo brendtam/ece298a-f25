@@ -286,7 +286,7 @@ module tt_um_vga_example(
         end
         3'b100: begin // U
           if (u_done) begin
-            state <= 1;
+            state <= 2;
           end
         end
       default: state <= 3'b100;
