@@ -38,6 +38,10 @@ module tt_um_vga_example(
   reg [1:0] state;
   reg [5:0] counter;
 
+  localparam [1:0] STATE_U = 0;
+  localparam [1:0] STATE_W = 1;
+  localparam [1:0] STATE_BLANK = 2;
+ 
   reg signed [8:0] cos_val;
   reg signed [8:0] sin_val;
   reg signed [15:0] start_u;
@@ -78,7 +82,7 @@ module tt_um_vga_example(
       row_u <= 0; row_v <= 0;
       curr_u <= 0; curr_v <= 0;
       spin_speed <= 1;
-    end else if (state == 1) begin
+    end else if (state == STATE_W) begin
       if (pix_y == 480 && pix_x == 640) begin
         if (angle_idx < spin_speed) begin
           spin_speed <= spin_speed + 1;
@@ -127,8 +131,6 @@ module tt_um_vga_example(
           curr_v <= curr_v + sin_val;
         end
       end
-    end else if (state == 2) begin
-      angle_idx <= 0;
     end
   end
   wire w_done = (spin_speed == 0);
@@ -159,7 +161,7 @@ module tt_um_vga_example(
       (int_u >= -60 && int_u <= 80) &&
       (pix_x >= 128 && pix_x <= 512) &&
       (int_u - (int_v<<1) >= pos4 && int_u - (int_v<<1) <= pos4+line_width);
-  wire in_shape = (Lo || Li || Ri || Ro) && state == 1;
+  wire in_shape = (Lo || Li || Ri || Ro) && state == STATE_W;
 
   // U
   parameter H_ORIGIN = 320;
@@ -218,7 +220,7 @@ module tt_um_vga_example(
       frame_count <= 0;
       fall_y <= 0;
       fall_speed <= 2;
-    end else if (vsync && state == 0) begin
+    end else if (vsync && state == STATE_U) begin
       if (frame_count == 500) begin
         shift_side <= (fall_y < 180) ? 0 : shift_side + 1;
 
@@ -251,7 +253,7 @@ module tt_um_vga_example(
     end
   endgenerate
 
-  wire in_pattern = |bullets && state == 0;
+  wire in_pattern = |bullets && state == STATE_U;
   wire u_done = (shift_side > 500);
 
   // background
@@ -268,42 +270,42 @@ module tt_um_vga_example(
   // state
   always @(posedge vsync, negedge rst_n) begin
     if (~rst_n) begin
-      state <= 0;
+      state <= STATE_U;
       counter <= 0;
     end else begin
       case (state)
-        0: begin // U
+        STATE_U: begin // U
           if (u_done) begin
-            state <= 1;
+            state <= STATE_W;
           end
         end
-        1: begin // W
+        STATE_W: begin // W
           if (w_done) begin
-            state <= 2;
+            state <= STATE_BLANK;
           end
         end
-        2: begin // W -> U
+        STATE_BLANK: begin // W -> U
           counter <= counter + 1;
           if (counter >= 15) begin
             counter <= 0;
-            state <= 0;
+            state <= STATE_U;
           end
         end
-      default: state <= 0;
       endcase
     end
   end
 
   // color
   wire valid = in_shape || in_pattern;
+  wire checkerboard = pix_x[5] ^ shift_y[5];
   assign R = ((video_active) ?
     ((valid) ? 2'b11 :
-    ((pix_x[5] ^ shift_y[5]) ? 2'b00 : 2'b01)) : 2'b00);
+    ((checkerboard) ? 2'b00 : 2'b01)) : 2'b00);
   assign G = ((video_active) ?
     ((valid) ? 2'b11 :
-    ((pix_x[5] ^ shift_y[5]) ? 2'b00 : 2'b01)) : 2'b00);
+    ((checkerboard) ? 2'b00 : 2'b01)) : 2'b00);
   assign B = ((video_active) ?
     ((valid)  ? 2'b01 :
-    ((pix_x[5] ^ shift_y[5]) ? 2'b00 : 2'b01)) : 2'b00);
+    ((checkerboard) ? 2'b00 : 2'b01)) : 2'b00);
 
 endmodule
