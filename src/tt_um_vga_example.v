@@ -143,12 +143,13 @@ module tt_um_vga_example(
   end
 
   // Render bullets
-  genvar i;
+ genvar i;
   generate
-    for(i=0;i<6;i=i+1) begin : bullet_loop
-      wire [9:0] dx = (pix_x>bullet_pos_x[i]) ? (pix_x-bullet_pos_x[i]) : (bullet_pos_x[i]-pix_x);
-      wire [9:0] dy = (pix_y>bullet_pos_y[i]) ? (pix_y-bullet_pos_y[i]) : (bullet_pos_y[i]-pix_y);
-      assign bullets[i] = ((dx+dy)<=BULLET_SIZE);
+    for (i = 0; i < 8; i=i+1) begin : render_bullets
+      assign bullets[i] = (pix_x >= bullet_pos_x[i]-BULLET_SIZE) &&
+                          (pix_x <= bullet_pos_x[i]+BULLET_SIZE) &&
+                          (pix_y >= bullet_pos_y[i]-BULLET_SIZE) &&
+                          (pix_y <= bullet_pos_y[i]+BULLET_SIZE);
     end
   endgenerate
 
