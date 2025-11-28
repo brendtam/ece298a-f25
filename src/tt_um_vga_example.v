@@ -26,9 +26,11 @@ module tt_um_vga_example(
     .vpos(pix_y)
   );
 
+  //VGA Output
   assign uo_out = {hsync, B[0], G[0], R[0], vsync, B[1], G[1], R[1]};
   assign uio_out = 0;
   assign uio_oe  = 0;
+  // Unused wires
   wire _unused_ok = &{ena, ui_in, uio_in};
 
   // State machine
@@ -56,6 +58,7 @@ module tt_um_vga_example(
     endcase
   end
 
+  // Once speed overflows back to zero, set w_done to 1
   wire w_done = (spin_speed == 0);
   wire signed [8:0] int_u = curr_u[13:5];
   wire signed [8:0] int_v = curr_v[13:5];
@@ -75,15 +78,19 @@ module tt_um_vga_example(
 
   // Bullet parameters
   parameter H_ORIGIN=320, V_ORIGIN=0, BULLET_SIZE=10;
+  // fall_y is the vertical distance from V_ORIGIN, shift_side is the horizontal distance from H_ORIGIN
   reg [7:0] fall_y; reg [8:0] shift_side;
 
+  // Store position of center of bullet
   wire [9:0] bullet_pos_x [0:5], bullet_pos_y [0:5];
+  // Store the area that the entire bullet covers
   wire [5:0] bullets;
 
-  // Base positions assign base_x[2]= -50; assign base_y[2]=100; 
+  // Base positions for U-shape, assign base_x[2]= -50; assign base_y[2]=100; 
   wire signed [9:0] base_x[0:2]; assign base_x[0]= -62; assign base_x[1]= -62; assign base_x[2]= -26;
   wire signed [9:0] base_y[0:2]; assign base_y[0]=0; assign base_y[1]=48; assign base_y[2]=90; 
 
+  // Generate bullet positions and populate bullet_pos_x/bullet_pos_y arrays
   genvar k;
   generate
     for(k=0; k<3; k=k+1) begin
@@ -94,25 +101,38 @@ module tt_um_vga_example(
     end
   endgenerate
 
+  // Frame count to slow translation speed
   reg [8:0] frame_count; reg [4:0] fall_speed;
 
+  // Animate U-shape pattern
   always @(posedge clk or negedge rst_n) begin
     if (~rst_n) begin
       angle_idx <= 4; row_u <= 0; row_v <= 0; curr_u <= 0; curr_v <= 0; spin_speed <= 1;
       frame_count <= 0; fall_y <= 0; fall_speed <= 2; shift_side <= 0; state <= STATE_U;
-    end else if (vsync && state == STATE_U) begin
+    end else if (vsync && state == STATE_U) begin   // U section
+      // Increment frame count
       frame_count <= frame_count + 1;
+
+      //Every 500 frames, add a translation
       if (frame_count == 500) begin
+        // Stop falling once fall_y = 180 (roughly 1/2 of the screen vertical height)
         fall_y <= (fall_y >= 180) ? 180 : fall_y + fall_speed;
+
+        // Start shifting horizontally once fall_y is equal to 180
         shift_side <= (fall_y < 180) ? 0 : shift_side + 1;
+
+        // 3 layer cascading deceleration (10 to 4 to 1)
         fall_speed <= (fall_y < 25) ? 10 : ((fall_y < 125) ? 4 : 1);
+
+        // reset the frame count for the next frame
         frame_count <= 0;
       end
+      // if the U halves are outside the screen, change state to w_state
       if (shift_side > 400) begin
         frame_count <= 0; fall_y <= 0; fall_speed <= 2; shift_side <= 0;
         state <= STATE_W;
       end
-    end else if (state == STATE_W) begin
+    end else if (state == STATE_W) begin      // W-section
       if (pix_y == 480 && pix_x == 640) begin
         if (ui_in[0]) begin
           if (angle_idx == 0) spin_speed <= spin_speed + 1;
@@ -147,10 +167,10 @@ module tt_um_vga_example(
     end
   end
 
-  // Render bullets
+  // Render bullets (square shape)
  genvar i;
   generate
-    for (i = 0; i < 6; i=i+1) begin : render_bullets
+    for (i = 0; i < 8; i=i+1) begin : render_bullets
       assign bullets[i] = (pix_x >= bullet_pos_x[i]-BULLET_SIZE) &&
                           (pix_x <= bullet_pos_x[i]+BULLET_SIZE) &&
                           (pix_y >= bullet_pos_y[i]-BULLET_SIZE) &&
@@ -158,22 +178,24 @@ module tt_um_vga_example(
     end
   endgenerate
 
+  // in_pattern only checks if the pixel is in the U-shaped bullets
   wire in_pattern = (|bullets) && state==STATE_U;
 
-  // Background
+  // Background + background movement
   reg [3:0] bg_shift;
   wire [9:0] shift_y = pix_y - bg_shift;
   always @(posedge vsync or negedge rst_n) begin
     if (!rst_n) bg_shift <= 0;
-    else bg_shift <= bg_shift + 3;
+    else bg_shift <= bg_shift + 3;  //determines background movement speed
   end
 
   // Color generation
   wire valid = in_shape || in_pattern;
   wire checkerboard = pix_x[3] ^ shift_y[3];
 
-  assign R = (video_active) ? ((valid)?2'b11:(checkerboard?2'b00:2'b01)) : 2'b00;
-  assign G = (video_active) ? ((valid)?2'b11:(checkerboard?2'b00:2'b01)) : 2'b00;
-  assign B = (video_active) ? ((valid)?2'b01:(checkerboard?2'b00:2'b01)) : 2'b00;
+  // Generates red-black checkerboard pattern, Waterloo-yellow bullets/lines, and black border
+  assign R = (video_active) ? ((valid)?2'b11:(checkerboard?2'b00:2'b10)) : 2'b00;
+  assign G = (video_active) ? ((valid)?2'b11:(checkerboard?2'b00:2'b00)) : 2'b00;
+  assign B = (video_active) ? ((valid)?2'b01:(checkerboard?2'b00:2'b00)) : 2'b00;
 
 endmodule
