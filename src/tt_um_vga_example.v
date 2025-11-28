@@ -86,8 +86,6 @@ module tt_um_vga_example(
         curr_u <= angle_idx[3] ? curr_u - cos_val : curr_u + cos_val;
         curr_v <= angle_idx[3] ? curr_v - sin_val : curr_v + sin_val;
       end
-    end else begin
-      angle_idx <= 4;
     end
   end
 
