@@ -27,7 +27,7 @@ async def vga_signal_test(dut):
     for i in range(0, 525):
         for j in range(0, 800):
             await RisingEdge(dut.clk)
-            await ReadOnly()
+            #await ReadOnly()
 
             hsync = dut.user_project.hvsync_gen.hsync.value.integer
             if (j >= 656 and j < 752):
