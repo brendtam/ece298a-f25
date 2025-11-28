@@ -56,39 +56,6 @@ module tt_um_vga_example(
     endcase
   end
 
-  always @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      angle_idx <= 4; row_u <= 0; row_v <= 0; curr_u <= 0; curr_v <= 0; spin_speed <= 1;
-    end else if (state == STATE_W) begin
-      // Angle/rotation update
-      if (pix_y == 480 && pix_x == 640) begin
-        if (angle_idx == 0) spin_speed <= spin_speed + 1;
-        angle_idx <= angle_idx + 1;
-        if (spin_speed == 0) begin
-          angle_idx <= 4; row_u <= 0; row_v <= 0; curr_u <= 0; curr_v <= 0; spin_speed <= 1;
-        end
-      end
-
-      // Row/curr update
-      if (pix_x == 0) begin
-        if (pix_y == 0) begin
-          row_u <= angle_idx[3] ? -start_u : start_u;
-          row_v <= angle_idx[3] ? -start_v : start_v;
-          curr_u <= angle_idx[3] ? -start_u : start_u;
-          curr_v <= angle_idx[3] ? -start_v : start_v;
-        end else begin
-          row_u <= angle_idx[3] ? row_u + sin_val : row_u - sin_val;
-          row_v <= angle_idx[3] ? row_v - cos_val : row_v + cos_val;
-          curr_u <= angle_idx[3] ? row_u + sin_val : row_u - sin_val;
-          curr_v <= angle_idx[3] ? row_v - cos_val : row_v + cos_val;
-        end
-      end else if (video_active) begin
-        curr_u <= angle_idx[3] ? curr_u - cos_val : curr_u + cos_val;
-        curr_v <= angle_idx[3] ? curr_v - sin_val : curr_v + sin_val;
-      end
-    end
-  end
-
   wire w_done = (spin_speed == 0);
   wire signed [8:0] int_u = curr_u[13:5];
   wire signed [8:0] int_v = curr_v[13:5];
@@ -96,6 +63,7 @@ module tt_um_vga_example(
   // Shape positions
   localparam pos4 = -210, pos3 = -210, pos2 = 70, pos = 70;
   localparam line_width = 20;
+
 
   wire in_shape = (state==STATE_W) &&
                   (int_u >= -60 && int_u <= 80 && pix_x >= 128 && pix_x <= 512) &&
@@ -131,8 +99,9 @@ module tt_um_vga_example(
 
   always @(posedge clk or negedge rst_n) begin
     if (~rst_n) begin
+      angle_idx <= 4; row_u <= 0; row_v <= 0; curr_u <= 0; curr_v <= 0; spin_speed <= 1;
       frame_count <= 0; fall_y <= 0; fall_speed <= 2; shift_side <= 0;
-    end else if (vsync && state == 0) begin
+    end else if (vsync && state == STATE_U) begin
       frame_count <= frame_count + 1;
       if (frame_count == 800) begin
         fall_y <= (fall_y >= 180) ? 180 : fall_y + fall_speed;
@@ -140,8 +109,37 @@ module tt_um_vga_example(
         fall_speed <= (fall_y < 25) ? 10 : ((fall_y < 125) ? 4 : 1);
         frame_count <= 0;
       end
-    end else if (vsync && state == 1) begin
-      frame_count <= 0; fall_y <= 0; fall_speed <= 2; shift_side <= 0;
+      if (shift_side > 400) begin
+        frame_count <= 0; fall_y <= 0; fall_speed <= 2; shift_side <= 0;
+        state <= STATE_W;
+      end
+    end else if (state == STATE_W) begin
+      if (pix_y == 480 && pix_x == 640) begin
+        if (angle_idx == 0) spin_speed <= spin_speed + 1;
+        angle_idx <= angle_idx + 1;
+        if (spin_speed == 0) begin
+          angle_idx <= 4; row_u <= 0; row_v <= 0; curr_u <= 0; curr_v <= 0; spin_speed <= 1;
+          state <= STATE_U;
+        end
+      end
+
+      // Row/curr update
+      if (pix_x == 0) begin
+        if (pix_y == 0) begin
+          row_u <= angle_idx[3] ? -start_u : start_u;
+          row_v <= angle_idx[3] ? -start_v : start_v;
+          curr_u <= angle_idx[3] ? -start_u : start_u;
+          curr_v <= angle_idx[3] ? -start_v : start_v;
+        end else begin
+          row_u <= angle_idx[3] ? row_u + sin_val : row_u - sin_val;
+          row_v <= angle_idx[3] ? row_v - cos_val : row_v + cos_val;
+          curr_u <= angle_idx[3] ? row_u + sin_val : row_u - sin_val;
+          curr_v <= angle_idx[3] ? row_v - cos_val : row_v + cos_val;
+        end
+      end else if (video_active) begin
+        curr_u <= angle_idx[3] ? curr_u - cos_val : curr_u + cos_val;
+        curr_v <= angle_idx[3] ? curr_v - sin_val : curr_v + sin_val;
+      end
     end
   end
 
@@ -165,15 +163,6 @@ module tt_um_vga_example(
   always @(posedge vsync or negedge rst_n) begin
     if (!rst_n) bg_shift <= 0;
     else bg_shift <= bg_shift + 3;
-  end
-
-  // State transition
-  always @(posedge vsync or negedge rst_n) begin
-    if (~rst_n) state <= STATE_U;
-    else case(state)
-      STATE_U: if(u_done) state <= STATE_W;
-      STATE_W: if(w_done) state <= STATE_U;
-    endcase
   end
 
   // Color generation
