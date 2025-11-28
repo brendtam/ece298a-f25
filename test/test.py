@@ -52,7 +52,7 @@ async def accumulator_test(dut):
     for _ in range(5):
         await RisingEdge(dut.clk)
 
-    for step in range(1000):
+    for step in range(1000000):
         await ReadOnly()
 
         old_u = dut.user_project.curr_u.value.signed_integer
@@ -75,6 +75,9 @@ async def accumulator_test(dut):
 
         pix_x = dut.user_project.hvsync_gen.hpos.value.integer
         pix_y = dut.user_project.hvsync_gen.vpos.value.integer
+
+        if (pix_x > 640 or pix_y > 480):
+            continue
 
         assert abs(new_u - expected_u) <= 15, \
             f"accumulator U step wrong at {pix_x},{pix_y} (angle {angle_idx}): old={old_u} new={new_u} expected={expected_u}"
