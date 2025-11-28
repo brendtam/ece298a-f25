@@ -3,42 +3,53 @@ import math
 from cocotb.clock import Clock
 from cocotb.triggers import RisingEdge, FallingEdge, Timer, ReadOnly
 
-def dump_hierarchy(obj, indent=0):
-    for name in dir(obj):
-        try:
-            child = getattr(obj, name)
-            if hasattr(child, "_fullname"):
-                print("  " * indent + name)
-                dump_hierarchy(child, indent+1)
-        except Exception:
-            pass
+# def dump_hierarchy(obj, indent=0):
+#     for name in dir(obj):
+#         try:
+#             child = getattr(obj, name)
+#             if hasattr(child, "_fullname"):
+#                 print("  " * indent + name)
+#                 dump_hierarchy(child, indent+1)
+#         except Exception:
+#             pass
+
+# @cocotb.test()
+# async def test_dump(dut):
+#     dut._log.info("dut members: %s", dir(dut))
+#     dump_hierarchy(dut)
 
 @cocotb.test()
-async def test_dump(dut):
-    dut._log.info("dut members: %s", dir(dut))
-    dump_hierarchy(dut)
-
-def within_2px(val, expected):
-    return expected-2.0 <= val <= expected+2.0
-
-def to_signed14(x):
-    x &= 0x3FFF               # keep only 14 bits
-    if x & 0x2000:            # if sign bit is set
-        return x - 0x4000     # convert to negative value
-    return x
-
-@cocotb.test()
-async def accumulator_test(dut):
-
+async def w_end_test(dut):
     cocotb.start_soon(Clock(dut.clk, 40, units="ns").start())
     dut.rst_n.value = 0
     await Timer(100, units="ns")
     dut.rst_n.value = 1
+    dut.user_project.state.value = 1
 
-    # force W rotate mode
-    dut.user_project.state.value = dut.user_project.STATE_W.value
+    for frame in range(0, 512):
+        await RisingEdge(dut.user_project.vsync)
+        await ReadOnly()
 
-    # wait internal reset
+        state = dut.user_project.state.value.integer
+        if (state == 0):
+            return
+
+    assert False, "W took too long to transition"
+
+def to_signed14(x):
+    x &= 0x3FFF
+    if x & 0x2000:
+        return x - 0x4000
+    return x
+
+@cocotb.test()
+async def accumulator_test(dut):
+    cocotb.start_soon(Clock(dut.clk, 40, units="ns").start())
+    dut.rst_n.value = 0
+    await Timer(100, units="ns")
+    dut.rst_n.value = 1
+    dut.user_project.state.value = 1
+
     for _ in range(10):
         await RisingEdge(dut.clk)
 
@@ -58,28 +69,20 @@ async def accumulator_test(dut):
         angle_idx = dut.user_project.angle_idx.value.integer
         sign_bit = (angle_idx >> 3) & 1
 
-        # ---------------------
-        # Compute expected next values
-        # ---------------------
         if (pix_x == 0 and pix_y == 0):
-            # Frame reset case
             expected_u = (sin_val * 0)
             expected_v = (cos_val * 0)
             skip_check = True
-
         elif pix_x == 0:
-            # New row begins
             if (sign_bit == 1):
                 expected_row_u = to_signed14(old_ru + sin_val)
                 expected_row_v = to_signed14(old_rv - cos_val)
             else:
                 expected_row_u = to_signed14(old_ru - sin_val)
                 expected_row_v = to_signed14(old_rv + cos_val)
-
             expected_u = expected_row_u
             expected_v = expected_row_v
             skip_check = False
-
         else:
             if (sign_bit == 1):
                 expected_u = to_signed14(old_u - cos_val)
@@ -92,22 +95,20 @@ async def accumulator_test(dut):
         if (pix_x >= 640 or pix_y >= 480):
             skip_check = True
 
-        # Advance clock and sample new values
         await RisingEdge(dut.clk)
         await ReadOnly()
 
         new_u  = dut.user_project.curr_u.value.signed_integer
         new_v  = dut.user_project.curr_v.value.signed_integer
 
-        # Skip the very first pixel of the frame due to LUT symmetry logic
         if skip_check:
             continue
 
         assert abs(new_u - expected_u) <= 1, \
-            f"[row {pix_y}, x {pix_x}] U wrong: old={old_u} new={new_u} expect={expected_u}"
+            f"row {pix_y}, x {pix_x} U wrong: old={old_u} new={new_u} expected={expected_u}"
 
         assert abs(new_v - expected_v) <= 1, \
-            f"[row {pix_y}, x {pix_x}] V wrong: old={old_v} new={new_v} expect={expected_v}"
+            f"row {pix_y}, x {pix_x} V wrong: old={old_v} new={new_v} expected={expected_v}"
 
 @cocotb.test()
 async def vga_signal_test(dut):
@@ -145,4 +146,3 @@ async def vga_signal_test(dut):
             
             pix_y = dut.user_project.hvsync_gen.vpos.value.integer
             assert pix_y == i, f"value from module {pix_y} and expected value {i} are not equal"
-
