@@ -39,7 +39,7 @@ async def vga_signal_test(dut):
             assert pix_x == j, f"value from module {pix_x} and expected value {j} are not equal"
 
             display_on = dut.user_project.hvsync_gen.display_on.value.integer
-            if (j <= 640 and i <= 480):
+            if (j < 640 and i < 480):
                 assert display_on == 1, f"display at {j},{i} should be on"
             else:
                 assert display_on == 0, f"display at {j},{i} should be off"
