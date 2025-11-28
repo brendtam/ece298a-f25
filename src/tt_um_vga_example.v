@@ -86,11 +86,7 @@ module tt_um_vga_example(
       row_u <= 0; row_v <= 0;
       curr_u <= 0; curr_v <= 0;
       spin_speed <= 1;
-      fall_y <= 0;
-      shift_side <= 0;
     end else if (state == STATE_W) begin
-      fall_y <= 0;
-      shift_side <= 0;
       if (pix_y == screen_h && pix_x == screen_w) begin
         if (angle_idx < 6) spin_speed <= spin_speed + 1;
         angle_idx <= angle_idx + 6;
