@@ -28,6 +28,7 @@ async def w_end_test(dut):
 
     for _ in range(576):
         await ClockCycles(dut.clk, 420000)
+        dut._log.info(f"{_} frames passed")
         state = dut.user_project.state.value.integer
         if state == 0:
             return
