@@ -18,7 +18,7 @@ async def reset_test(dut):
     for _ in range(10):
         await RisingEdge(dut.clk)
 
-    assert dut.state.value.integer == 0, f"State should be STATE_U (0) after reset, got {dut.state.value}"
+    assert dut.state.value.integer == 0, f"State should be STATE_U (0) after reset, got {dut.state.value.integer}"
 
 @cocotb.test()
 async def fsm_transition_test(dut):
@@ -32,13 +32,13 @@ async def fsm_transition_test(dut):
     dut.shift_side.value = 401
     await RisingEdge(dut.vsync)  # FSM triggers on vsync
     await RisingEdge(dut.clk)
-    assert dut.state.value.integer == 1, f"Expected STATE_W, got {dut.state.value}"
+    assert dut.state.value.integer == 1, f"Expected STATE_W, got {dut.state.value.integer}"
 
     # Simulate spin_speed == 0 to trigger w_done (STATE_W -> STATE_U)
     dut.spin_speed.value = 0
     await RisingEdge(dut.vsync)
     await RisingEdge(dut.clk)
-    assert dut.state.value.integer == 0, f"Expected STATE_U, got {dut.state.value}"
+    assert dut.state.value.integer == 0, f"Expected STATE_U, got {dut.state.value.integer}"
 
 @cocotb.test()
 async def vga_signal_test(dut):
