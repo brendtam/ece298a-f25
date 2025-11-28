@@ -1,14 +1,6 @@
 `ifndef HVSYNC_GENERATOR_H
 `define HVSYNC_GENERATOR_H
 
-/*
-Video sync generator, used to drive a VGA monitor.
-Timing from: https://en.wikipedia.org/wiki/Video_Graphics_Array
-To use:
-- Wire the hsync and vsync signals to top level outputs
-- Add a 3-bit (or more) "rgb" output to the top level
-*/
-
 module hvsync_generator(clk, reset, hsync, vsync, display_on, hpos, vpos);
 
   input clk;
@@ -37,8 +29,8 @@ module hvsync_generator(clk, reset, hsync, vsync, display_on, hpos, vpos);
   parameter V_SYNC_END      = V_DISPLAY + V_BOTTOM + V_SYNC - 1;
   parameter V_MAX           = V_DISPLAY + V_TOP + V_BOTTOM + V_SYNC - 1;
 
-  wire hmaxxed = (hpos == H_MAX) || reset;	// set when hpos is maximum
-  wire vmaxxed = (vpos == V_MAX) || reset;	// set when vpos is maximum
+  wire hmaxxed = (hpos == H_MAX) || reset;
+  wire vmaxxed = (vpos == V_MAX) || reset;
   
   // horizontal position counter
   always @(posedge clk)

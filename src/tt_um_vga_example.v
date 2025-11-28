@@ -31,7 +31,7 @@ module tt_um_vga_example(
   assign uio_out = 0;
   assign uio_oe  = 0;
   // Unused wires
-  wire _unused_ok = &{ena, ui_in[7:1], uio_in};
+  wire _unused_ok = &{ena, ui_in, uio_in};
 
   // State machine
   reg state;
