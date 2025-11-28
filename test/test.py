@@ -47,8 +47,8 @@ async def w_rotate_test(dut):
                 
                 rot_x = rotated_x / 32.0
                 rot_y = rotated_y / 32.0
-                exp_x = ((pix_x - 320) * math.cos((angle_idx*2*math.pi) / 16.0)) - ((pix_y - 240) * math.sin((angle_idx*2*math.pi) / 16.0))
-                exp_y = ((pix_x - 320) * math.sin((angle_idx*2*math.pi) / 16.0)) + ((pix_y - 240) * math.cos((angle_idx*2*math.pi) / 16.0))
+                exp_x = (pix_x-320) * math.cos(angle_idx*2*math.pi / 16.0)
+                exp_y = (pix_y-240) * math.sin(angle_idx*2*math.pi / 16.0)
                 assert within_2px(rot_x, exp_x), \
                     f"({pix_x}, {pix_y}) is not rotated correctly. x given: {rot_x}, x expected: {exp_x}"
                 assert within_2px(rot_y, exp_y), \
