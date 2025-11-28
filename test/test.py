@@ -45,7 +45,7 @@ async def vga_signal_test(dut):
                 assert display_on == 0, f"display at {j},{i} should be off"
         
         vsync = dut.user_project.hvsync_gen.vsync.value.integer
-        if (i >= 523 and i <= 525):
+        if (i > 490 and i <= 492):
             assert vsync == 1, f"vsync not enabled on y={i}"
         else:
             assert vsync == 0, f"vsync not disabled on y={i}"
