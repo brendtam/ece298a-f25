@@ -27,7 +27,7 @@ async def w_end_test(dut):
     dut.user_project.state.value = 1
 
     for _ in range(576):
-        await ClockCycles(dut.clk, 420000)
+        await RisingEdge(dut.user_project.vsync)
         dut._log.info(f"{_} frames passed")
         state = dut.user_project.state.value.integer
         if state == 0:
