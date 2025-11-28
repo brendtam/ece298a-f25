@@ -36,23 +36,23 @@ module tt_um_vga_example(
   localparam STATE_U = 0, STATE_W = 1;
 
   // Rotation / spin
-  reg signed [6:0] cos_val, sin_val;
-  reg signed [14:0] start_u, start_v, row_u, row_v, curr_u, curr_v;
+  reg signed [5:0] cos_val, sin_val;
+  reg signed [13:0] start_u, start_v, row_u, row_v, curr_u, curr_v;
   reg [3:0] angle_idx;
   reg [3:0] spin_speed;
 
   // Angle table
   always @(*) begin
     case(angle_idx[2:0])
-      0:  begin cos_val=32;  sin_val=0;    start_u=-10240; start_v=-7680;  end
+      0:  begin cos_val=31;  sin_val=0;    start_u=-10240; start_v=-7680;  end
       1:  begin cos_val=30;  sin_val=13;   start_u=-6460;  start_v=-11720; end
       2:  begin cos_val=24;  sin_val=24;   start_u=-1980;  start_v=-13860; end
       3:  begin cos_val=13;  sin_val=30;   start_u=2920;   start_v=-13060; end
-      4:  begin cos_val=0;   sin_val=32;   start_u=7680;   start_v=-10240; end
+      4:  begin cos_val=0;   sin_val=31;   start_u=7680;   start_v=-10240; end
       5: begin cos_val=-13; sin_val=30;   start_u=11720;  start_v=-6460;  end
       6: begin cos_val=-24; sin_val=24;   start_u=13860;  start_v=-1980;  end
       7: begin cos_val=-30; sin_val=13;   start_u=13060;  start_v=2920;   end
-      default: begin cos_val=32; sin_val=0; start_u=-10240; start_v=-7680; end
+      default: begin cos_val=31; sin_val=0; start_u=-10240; start_v=-7680; end
     endcase
   end
 
@@ -92,8 +92,8 @@ module tt_um_vga_example(
   end
 
   wire w_done = (spin_speed == 0);
-  wire signed [9:0] int_u = curr_u[14:5];
-  wire signed [9:0] int_v = curr_v[14:5];
+  wire signed [8:0] int_u = curr_u[13:5];
+  wire signed [8:0] int_v = curr_v[13:5];
 
   // Shape positions
   localparam pos4 = -210, pos3 = -210, pos2 = 70, pos = 70;
@@ -150,7 +150,7 @@ module tt_um_vga_example(
   // Render bullets
  genvar i;
   generate
-    for (i = 0; i < 6; i=i+1) begin : render_bullets
+    for (i = 0; i < 8; i=i+1) begin : render_bullets
       assign bullets[i] = (pix_x >= bullet_pos_x[i]-BULLET_SIZE) &&
                           (pix_x <= bullet_pos_x[i]+BULLET_SIZE) &&
                           (pix_y >= bullet_pos_y[i]-BULLET_SIZE) &&
