@@ -36,34 +36,23 @@ module tt_um_vga_example(
   localparam STATE_U = 0, STATE_W = 1;
 
   // Rotation / spin
-  reg signed [8:0] cos_val, sin_val;
-  reg signed [15:0] start_u, start_v, row_u, row_v, curr_u, curr_v;
+  reg signed [5:0] cos_val, sin_val;
+  reg signed [13:0] start_u, start_v, row_u, row_v, curr_u, curr_v;
   reg [6:0] angle_idx;
   reg [3:0] spin_speed;
 
-  // wire [9:0] dx;
-  // wire [9:0] dy;
-
   // Angle table
   always @(*) begin
-    case(angle_idx[5:2])
-      0:  begin cos_val=128; sin_val=0;    start_u=-40960; start_v=-30720; end
-      1:  begin cos_val=127; sin_val=28;   start_u=-33920; start_v=-39440; end
-      2:  begin cos_val=122; sin_val=55;   start_u=-25840; start_v=-46880; end
-      3:  begin cos_val=113; sin_val=79;   start_u=-17200; start_v=-52400; end
-      4:  begin cos_val=99;  sin_val=99;   start_u=-7920;  start_v=-55440; end
-      5:  begin cos_val=79;  sin_val=113;  start_u=1840;   start_v=-55120; end
-      6:  begin cos_val=55;  sin_val=122;  start_u=11680;  start_v=-52240; end
-      7:  begin cos_val=28;  sin_val=127;  start_u=21520;  start_v=-47360; end
-      8:  begin cos_val=0;   sin_val=128;  start_u=30720;  start_v=-40960; end
-      9:  begin cos_val=-28; sin_val=127;  start_u=39440;  start_v=-33920; end
-      10: begin cos_val=-55; sin_val=122;  start_u=46880;  start_v=-25840; end
-      11: begin cos_val=-79; sin_val=113;  start_u=52400;  start_v=-17200; end
-      12: begin cos_val=-99; sin_val=99;   start_u=55440;  start_v=-7920;  end
-      13: begin cos_val=-113;sin_val=79;   start_u=55120;  start_v=1840;   end
-      14: begin cos_val=-122;sin_val=55;   start_u=52240;  start_v=11680;  end
-      15: begin cos_val=-127;sin_val=28;   start_u=47360;  start_v=21520;  end
-      default: begin cos_val=128; sin_val=0; start_u=-40960; start_v=-30720; end
+    case(angle_idx[5:3])
+      0:  begin cos_val=32;  sin_val=0;    start_u=-10240; start_v=-7680;  end
+      1:  begin cos_val=30;  sin_val=13;   start_u=-6460;  start_v=-11720; end
+      2:  begin cos_val=24;  sin_val=24;   start_u=-1980;  start_v=-13860; end
+      3:  begin cos_val=13;  sin_val=30;   start_u=2920;   start_v=-13060; end
+      4:  begin cos_val=0;   sin_val=32;   start_u=7680;   start_v=-10240; end
+      5: begin cos_val=-13; sin_val=30;   start_u=11720;  start_v=-6460;  end
+      6: begin cos_val=-24; sin_val=24;   start_u=13860;  start_v=-1980;  end
+      7: begin cos_val=-30; sin_val=13;   start_u=13060;  start_v=2920;   end
+      default: begin cos_val=32; sin_val=0; start_u=-10240; start_v=-7680; end
     endcase
   end
 
@@ -100,8 +89,8 @@ module tt_um_vga_example(
   end
 
   wire w_done = (spin_speed == 0);
-  wire signed [8:0] int_u = curr_u[15:7];
-  wire signed [8:0] int_v = curr_v[15:7];
+  wire signed [8:0] int_u = curr_u[13:7];
+  wire signed [8:0] int_v = curr_v[13:7];
 
   // Shape positions
   localparam pos4 = -210, pos3 = -210, pos2 = 70, pos = 70;
