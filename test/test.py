@@ -1,4 +1,5 @@
 import cocotb
+import math
 from cocotb.clock import Clock
 from cocotb.triggers import RisingEdge, FallingEdge, Timer, ReadOnly
 
@@ -17,6 +18,42 @@ async def test_dump(dut):
     dut._log.info("dut members: %s", dir(dut))
     dump_hierarchy(dut)
 
+def within_2px(val, expected):
+    return expected-2.0 <= val <= expected+2.0
+
+@cocotb.test()
+async def w_rotate_test(dut):
+    cocotb.start_soon(Clock(dut.clk, 40, units="ns").start())
+    dut.rst_n.value = 0
+    await Timer(100, units="ns")
+    dut.rst_n.value = 1
+    dut.user_project.state.value = 1
+
+    for frame in range(0, 16):
+        dut._log.info(f"testing frame {frame}")
+        for i in range(0, 525):
+            for j in range(0, 800):
+                await RisingEdge(dut.clk)
+                await ReadOnly()
+
+                pix_x = dut.user_project.hvsync_gen.hpos.value.integer
+                pix_y = dut.user_project.hvsync_gen.vpos.value.integer
+                if (pix_x > 640 or pix_y > 480):
+                    continue
+
+                rotated_x = dut.user_project.curr_u.value.integer
+                rotated_y = dut.user_project.curr_v.value.integer
+                angle_idx = dut.user_project.angle_idx.value.integer
+                
+                rot_x = rotated_x / 32.0
+                rot_y = rotated_y / 32.0
+                exp_x = (pix_x - 320) * math.cos((angle_idx*2*math.pi) / 16.0)) - ((pix_y - 240) * math.sin((angle_idx*2*math.pi) / 16.0)
+                exp_y = (pix_x - 320) * math.sin((angle_idx*2*math.pi) / 16.0)) + ((pix_y - 240) * math.cos((angle_idx*2*math.pi) / 16.0)
+                assert within_2px(rot_x, exp_x), \
+                    f"({pix_x}, {pix_y}) is not rotated correctly. x given: {rot_x}, x expected: {exp_x}"
+                assert within_2px(rot_y, exp_y), \
+                    f"({pix_x}, {pix_y}) is not rotated correctly. y given: {rot_y}, y expected: {exp_y}"
+
 @cocotb.test()
 async def vga_signal_test(dut):
     cocotb.start_soon(Clock(dut.clk, 40, units="ns").start())
@@ -25,10 +62,10 @@ async def vga_signal_test(dut):
     dut.rst_n.value = 1
 
     for frame in range(0, 5):
+        dut._log.info(f"testing frame {frame}")
         for i in range(0, 525):
             for j in range(0, 800):
                 await RisingEdge(dut.clk)
-                #await ReadOnly()
 
                 hsync = dut.user_project.hvsync_gen.hsync.value.integer
                 if (j > 656 and j <= 752):
@@ -53,3 +90,4 @@ async def vga_signal_test(dut):
             
             pix_y = dut.user_project.hvsync_gen.vpos.value.integer
             assert pix_y == i, f"value from module {pix_y} and expected value {i} are not equal"
+

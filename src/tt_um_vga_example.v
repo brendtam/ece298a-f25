@@ -41,7 +41,7 @@ module tt_um_vga_example(
   reg signed [5:0] cos_val, sin_val;
   reg signed [13:0] start_u, start_v, row_u, row_v, curr_u, curr_v;
   reg [3:0] angle_idx;
-  reg [3:0] spin_speed;
+  reg [2:0] spin_speed;
 
   // Angle table
   always @(*) begin
@@ -138,11 +138,17 @@ module tt_um_vga_example(
           if (angle_idx == 0) spin_speed <= spin_speed + 1;
           angle_idx <= angle_idx + 1;
         end else begin
-          if (angle_idx < spin_speed) spin_speed <= spin_speed + 1;
+          if (frame_count == 32) begin
+            frame_count <= 0;
+            spin_speed <= spin_speed + 1;
+          end else begin
+            frame_count <= frame_count + 1;
+          end
           angle_idx <= angle_idx + spin_speed;
         end
         if (spin_speed == 0) begin
           angle_idx <= 4; row_u <= 0; row_v <= 0; curr_u <= 0; curr_v <= 0; spin_speed <= 1;
+          frame_count <= 0;
           state <= STATE_U;
         end
       end
