@@ -26,7 +26,7 @@ async def w_end_test(dut):
     dut.rst_n.value = 1
     dut.user_project.state.value = 1
 
-    for _ in range(2000):
+    for _ in range(800 * 525 * 32 * 9):
         await RisingEdge(dut.clk)
         state = dut.user_project.state.value.integer
         if state == 0:
