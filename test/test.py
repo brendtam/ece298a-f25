@@ -18,40 +18,6 @@ async def test_dump(dut):
     dut._log.info("dut members: %s", dir(dut))
     dump_hierarchy(dut)
 
-@cocotb.test()
-async def u_end_test(dut):
-    cocotb.start_soon(Clock(dut.clk, 40, units="ns").start())
-    dut.rst_n.value = 0
-    await Timer(100, units="ns")
-    dut.rst_n.value = 1
-    dut.user_project.state.value = 0
-
-    for _ in range(500):
-        await RisingEdge(dut.user_project.vsync)
-        dut._log.info(f"{_} frames passed")
-        state = dut.user_project.state.value.integer
-        if state == 1:
-            return
-
-    assert False, "U took too long to transition"
-
-@cocotb.test()
-async def w_end_test(dut):
-    cocotb.start_soon(Clock(dut.clk, 40, units="ns").start())
-    dut.rst_n.value = 0
-    await Timer(100, units="ns")
-    dut.rst_n.value = 1
-    dut.user_project.state.value = 1
-
-    for _ in range(500):
-        await RisingEdge(dut.user_project.vsync)
-        dut._log.info(f"{_} frames passed")
-        state = dut.user_project.state.value.integer
-        if state == 0:
-            return
-
-    assert False, "W took too long to transition"
-
 def to_signed14(x):
     x &= 0x3FFF
     if x & 0x2000:
@@ -162,3 +128,37 @@ async def vga_signal_test(dut):
             
             pix_y = dut.user_project.hvsync_gen.vpos.value.integer
             assert pix_y == i, f"value from module {pix_y} and expected value {i} are not equal"
+
+@cocotb.test()
+async def u_end_test(dut):
+    cocotb.start_soon(Clock(dut.clk, 40, units="ns").start())
+    dut.rst_n.value = 0
+    await Timer(100, units="ns")
+    dut.rst_n.value = 1
+    dut.user_project.state.value = 0
+
+    for _ in range(500):
+        await RisingEdge(dut.user_project.vsync)
+        dut._log.info(f"{_} frames passed")
+        state = dut.user_project.state.value.integer
+        if state == 1:
+            return
+
+    assert False, "U took too long to transition"
+
+@cocotb.test()
+async def w_end_test(dut):
+    cocotb.start_soon(Clock(dut.clk, 40, units="ns").start())
+    dut.rst_n.value = 0
+    await Timer(100, units="ns")
+    dut.rst_n.value = 1
+    dut.user_project.state.value = 1
+
+    for _ in range(500):
+        await RisingEdge(dut.user_project.vsync)
+        dut._log.info(f"{_} frames passed")
+        state = dut.user_project.state.value.integer
+        if state == 0:
+            return
+
+    assert False, "W took too long to transition"
