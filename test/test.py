@@ -25,15 +25,6 @@ async def vga_signal_test(dut):
     dut.rst_n.value = 1
 
     for i in range(0, 525):
-        vsync = dut.user_project.hvsync_gen.vsync.value.integer
-        if (i > 490 and i <= 492):
-            assert vsync == 1, f"vsync not enabled on y={i}"
-        else:
-            assert vsync == 0, f"vsync not disabled on y={i}"
-        
-        pix_y = dut.user_project.hvsync_gen.vpos.value.integer
-        assert pix_y == i, f"value from module {pix_y} and expected value {i} are not equal"
-
         for j in range(0, 800):
             await RisingEdge(dut.clk)
             #await ReadOnly()
@@ -52,4 +43,13 @@ async def vga_signal_test(dut):
                 assert display_on == 1, f"display at {j},{i} should be on"
             else:
                 assert display_on == 0, f"display at {j},{i} should be off"
+        
+        vsync = dut.user_project.hvsync_gen.vsync.value.integer
+        if (i >= 490 and i < 492):
+            assert vsync == 1, f"vsync not enabled on y={i}"
+        else:
+            assert vsync == 0, f"vsync not disabled on y={i}"
+        
+        pix_y = dut.user_project.hvsync_gen.vpos.value.integer
+        assert pix_y == i, f"value from module {pix_y} and expected value {i} are not equal"
 
