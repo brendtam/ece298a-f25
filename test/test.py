@@ -24,8 +24,8 @@ async def vga_signal_test(dut):
     await Timer(100, units="ns")
     dut.rst_n.value = 1
 
-    for i in range(525):
-        for j in range(800):
+    for i in range(1, 525+1):
+        for j in range(1, 800+1):
             await RisingEdge(dut.clk)
             await ReadOnly()
 
