@@ -96,6 +96,9 @@ async def accumulator_test(dut):
             expected_u = to_signed14(old_u + sign_x * cos_val)
             expected_v = to_signed14(old_v + sign_y * sin_val)
             skip_check = False
+        
+        if (pix_x >= 640 or pix_y >= 480):
+            skip_check = True
 
         # Advance clock and sample new values
         await RisingEdge(dut.clk)
