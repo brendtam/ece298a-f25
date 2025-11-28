@@ -24,32 +24,32 @@ async def vga_signal_test(dut):
     await Timer(100, units="ns")
     dut.rst_n.value = 1
 
-    for i in range(0, 525):
-        for j in range(0, 800):
-            await RisingEdge(dut.clk)
-            #await ReadOnly()
+    for frame in range(0, 5):
+        for i in range(0, 525):
+            for j in range(0, 800):
+                await RisingEdge(dut.clk)
+                #await ReadOnly()
 
-            hsync = dut.user_project.hvsync_gen.hsync.value.integer
-            if (j > 656 and j <= 752):
-                assert hsync == 1, f"hsync not enabled on x={j}"
-            else:
-                assert hsync == 0, f"hsync not disabled on x={j}"
+                hsync = dut.user_project.hvsync_gen.hsync.value.integer
+                if (j > 656 and j <= 752):
+                    assert hsync == 1, f"hsync not enabled on x={j}"
+                else:
+                    assert hsync == 0, f"hsync not disabled on x={j}"
+                
+                pix_x = dut.user_project.hvsync_gen.hpos.value.integer
+                assert pix_x == j, f"value from module {pix_x} and expected value {j} are not equal"
+
+                display_on = dut.user_project.hvsync_gen.display_on.value.integer
+                if (j < 640 and i < 480):
+                    assert display_on == 1, f"display at {j},{i} should be on"
+                else:
+                    assert display_on == 0, f"display at {j},{i} should be off"
             
-            pix_x = dut.user_project.hvsync_gen.hpos.value.integer
-            assert pix_x == j, f"value from module {pix_x} and expected value {j} are not equal"
-
-            display_on = dut.user_project.hvsync_gen.display_on.value.integer
-            if (j < 640 and i < 480):
-                assert display_on == 1, f"display at {j},{i} should be on"
+            vsync = dut.user_project.hvsync_gen.vsync.value.integer
+            if (i >= 490 and i < 492):
+                assert vsync == 1, f"vsync not enabled on y={i}"
             else:
-                assert display_on == 0, f"display at {j},{i} should be off"
-        
-        vsync = dut.user_project.hvsync_gen.vsync.value.integer
-        if (i >= 490 and i < 492):
-            assert vsync == 1, f"vsync not enabled on y={i}"
-        else:
-            assert vsync == 0, f"vsync not disabled on y={i}"
-        
-        pix_y = dut.user_project.hvsync_gen.vpos.value.integer
-        assert pix_y == i, f"value from module {pix_y} and expected value {i} are not equal"
-
+                assert vsync == 0, f"vsync not disabled on y={i}"
+            
+            pix_y = dut.user_project.hvsync_gen.vpos.value.integer
+            assert pix_y == i, f"value from module {pix_y} and expected value {i} are not equal"
