@@ -42,7 +42,7 @@ async def accumulator_test(dut):
     for _ in range(10):
         await RisingEdge(dut.clk)
 
-    for step in range(50000):   # enough for many rows
+    for step in range(500000):
         await ReadOnly()
 
         old_u   = dut.user_project.curr_u.value.signed_integer
