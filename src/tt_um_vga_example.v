@@ -109,20 +109,20 @@ module tt_um_vga_example(
   parameter H_ORIGIN=320, V_ORIGIN=0, BULLET_SIZE=10;
   reg [9:0] fall_y; reg [8:0] shift_side;
 
-  wire [9:0] bullet_pos_x [0:7], bullet_pos_y [0:7];
-  wire [7:0] bullets;
+  wire [9:0] bullet_pos_x [0:5], bullet_pos_y [0:5];
+  wire [5:0] bullets;
 
-  // Base positions
-  wire signed [9:0] base_x[0:3]; assign base_x[0]= -62; assign base_x[1]= -62; assign base_x[2]= -50; assign base_x[3]= -18;
-  wire signed [9:0] base_y[0:3]; assign base_y[0]=0; assign base_y[1]=48; assign base_y[2]=100; assign base_y[3]=120;
+  // Base positions assign base_x[2]= -50; assign base_y[2]=100; 
+  wire signed [9:0] base_x[0:2]; assign base_x[0]= -62; assign base_x[1]= -62; assign base_x[2]= -18;
+  wire signed [9:0] base_y[0:2]; assign base_y[0]=0; assign base_y[1]=48; assign base_y[2]=120;
 
   genvar k;
   generate
-    for(k=0; k<4; k=k+1) begin
+    for(k=0; k<3; k=k+1) begin
       assign bullet_pos_x[k]   = H_ORIGIN + base_x[k] + shift_side;
-      assign bullet_pos_x[7-k] = H_ORIGIN - base_x[k] - shift_side;
+      assign bullet_pos_x[5-k] = H_ORIGIN - base_x[k] - shift_side;
       assign bullet_pos_y[k]   = base_y[k] + fall_y;
-      assign bullet_pos_y[7-k] = base_y[k] + fall_y;
+      assign bullet_pos_y[5-k] = base_y[k] + fall_y;
     end
   endgenerate
 
@@ -145,7 +145,7 @@ module tt_um_vga_example(
   // Render bullets
   genvar i;
   generate
-    for(i=0;i<8;i=i+1) begin : bullet_loop
+    for(i=0;i<6;i=i+1) begin : bullet_loop
       wire [9:0] dx = (pix_x>bullet_pos_x[i]) ? (pix_x-bullet_pos_x[i]) : (bullet_pos_x[i]-pix_x);
       wire [9:0] dy = (pix_y>bullet_pos_y[i]) ? (pix_y-bullet_pos_y[i]) : (bullet_pos_y[i]-pix_y);
       assign bullets[i] = ((dx+dy)<=BULLET_SIZE);
