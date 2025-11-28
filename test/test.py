@@ -26,12 +26,10 @@ async def w_end_test(dut):
     dut.rst_n.value = 1
     dut.user_project.state.value = 1
 
-    for frame in range(0, 512):
-        await RisingEdge(dut.user_project.vsync)
-        await ReadOnly()
-
+    for _ in range(2000):
+        await RisingEdge(dut.clk)
         state = dut.user_project.state.value.integer
-        if (state == 0):
+        if state == 0:
             return
 
     assert False, "W took too long to transition"
