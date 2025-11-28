@@ -64,7 +64,6 @@ module tt_um_vga_example(
   localparam pos4 = -210, pos3 = -210, pos2 = 70, pos = 70;
   localparam line_width = 20;
 
-
   wire in_shape = (state==STATE_W) &&
                   (int_u >= -60 && int_u <= 80 && pix_x >= 128 && pix_x <= 512) &&
                   (
@@ -76,7 +75,7 @@ module tt_um_vga_example(
 
   // Bullet parameters
   parameter H_ORIGIN=320, V_ORIGIN=0, BULLET_SIZE=10;
-  reg [9:0] fall_y; reg [8:0] shift_side;
+  reg [7:0] fall_y; reg [8:0] shift_side;
 
   wire [9:0] bullet_pos_x [0:5], bullet_pos_y [0:5];
   wire [5:0] bullets;
@@ -95,7 +94,7 @@ module tt_um_vga_example(
     end
   endgenerate
 
-  reg [9:0] frame_count; reg [4:0] fall_speed;
+  reg [8:0] frame_count; reg [4:0] fall_speed;
 
   always @(posedge clk or negedge rst_n) begin
     if (~rst_n) begin
@@ -103,7 +102,7 @@ module tt_um_vga_example(
       frame_count <= 0; fall_y <= 0; fall_speed <= 2; shift_side <= 0;
     end else if (vsync && state == STATE_U) begin
       frame_count <= frame_count + 1;
-      if (frame_count == 800) begin
+      if (frame_count == 500) begin
         fall_y <= (fall_y >= 180) ? 180 : fall_y + fall_speed;
         shift_side <= (fall_y < 180) ? 0 : shift_side + 1;
         fall_speed <= (fall_y < 25) ? 10 : ((fall_y < 125) ? 4 : 1);
@@ -155,10 +154,9 @@ module tt_um_vga_example(
   endgenerate
 
   wire in_pattern = (|bullets) && state==STATE_U;
-  wire u_done = (shift_side>400);
 
   // Background
-  reg [5:0] bg_shift;
+  reg [3:0] bg_shift;
   wire [9:0] shift_y = pix_y - bg_shift;
   always @(posedge vsync or negedge rst_n) begin
     if (!rst_n) bg_shift <= 0;
@@ -167,7 +165,7 @@ module tt_um_vga_example(
 
   // Color generation
   wire valid = in_shape || in_pattern;
-  wire checkerboard = pix_x[5] ^ shift_y[5];
+  wire checkerboard = pix_x[3] ^ shift_y[3];
 
   assign R = (video_active) ? ((valid)?2'b11:(checkerboard?2'b00:2'b01)) : 2'b00;
   assign G = (video_active) ? ((valid)?2'b11:(checkerboard?2'b00:2'b01)) : 2'b00;
