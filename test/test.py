@@ -1,7 +1,7 @@
 import cocotb
 import math
 from cocotb.clock import Clock
-from cocotb.triggers import RisingEdge, FallingEdge, Timer, ReadOnly
+from cocotb.triggers import RisingEdge, FallingEdge, Timer, ReadOnly, ClockCycles
 
 # def dump_hierarchy(obj, indent=0):
 #     for name in dir(obj):
@@ -26,8 +26,8 @@ async def w_end_test(dut):
     dut.rst_n.value = 1
     dut.user_project.state.value = 1
 
-    for _ in range(800 * 525 * 32 * 9):
-        await RisingEdge(dut.clk)
+    for _ in range(576):
+        await ClockCycles(dut.clk, 420000)
         state = dut.user_project.state.value.integer
         if state == 0:
             return
