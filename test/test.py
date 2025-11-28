@@ -21,20 +21,6 @@ async def test_dump(dut):
 def within_2px(val, expected):
     return expected-2.0 <= val <= expected+2.0
 
-def get_expected_signs(angle_idx):
-    q = angle_idx >> 3   # quadrant 0–3
-
-    # x step uses cos
-    # y step uses sin
-    if q == 0:
-        return (1, 1)
-    elif q == 1:
-        return (-1, 1)
-    elif q == 2:
-        return (-1, -1)
-    else:
-        return (1, -1)
-
 def to_signed14(x):
     x &= 0x3FFF               # keep only 14 bits
     if x & 0x2000:            # if sign bit is set
@@ -70,31 +56,37 @@ async def accumulator_test(dut):
         cos_val = dut.user_project.cos_val.value.signed_integer
         sin_val = dut.user_project.sin_val.value.signed_integer
         angle_idx = dut.user_project.angle_idx.value.integer
-
-        sign_x, sign_y = get_expected_signs(angle_idx)
+        sign_bit = (angle_idx >> 3) & 1
 
         # ---------------------
         # Compute expected next values
         # ---------------------
         if (pix_x == 0 and pix_y == 0):
             # Frame reset case
-            expected_u = (sin_val * 0)  # actually start_u, but this varies with LUT quadrant
-            expected_v = (cos_val * 0)  # same, but we skip strict test
+            expected_u = (sin_val * 0)
+            expected_v = (cos_val * 0)
             skip_check = True
 
         elif pix_x == 0:
             # New row begins
-            expected_row_u = to_signed14(old_ru + (sign_y * sin_val))
-            expected_row_v = to_signed14(old_rv - (sign_x * cos_val))
+            if (sign_bit == 1):
+                expected_row_u = to_signed14(old_ru + sin_val)
+                expected_row_v = to_signed14(old_rv - cos_val)
+            else:
+                expected_row_u = to_signed14(old_ru - sin_val)
+                expected_row_v = to_signed14(old_rv + cos_val)
 
             expected_u = expected_row_u
             expected_v = expected_row_v
             skip_check = False
 
         else:
-            # Normal pixel-to-pixel step
-            expected_u = to_signed14(old_u + sign_x * cos_val)
-            expected_v = to_signed14(old_v + sign_y * sin_val)
+            if (sign_bit == 1):
+                expected_u = to_signed14(old_u - cos_val)
+                expected_v = to_signed14(old_v - sin_val)
+            else:
+                expected_u = to_signed14(old_u + cos_val)
+                expected_v = to_signed14(old_v + sin_val)
             skip_check = False
         
         if (pix_x >= 640 or pix_y >= 480):
