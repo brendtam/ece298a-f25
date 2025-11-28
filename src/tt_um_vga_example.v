@@ -99,7 +99,7 @@ module tt_um_vga_example(
   always @(posedge clk or negedge rst_n) begin
     if (~rst_n) begin
       angle_idx <= 4; row_u <= 0; row_v <= 0; curr_u <= 0; curr_v <= 0; spin_speed <= 1;
-      frame_count <= 0; fall_y <= 0; fall_speed <= 2; shift_side <= 0;
+      frame_count <= 0; fall_y <= 0; fall_speed <= 2; shift_side <= 0; state <= STATE_U;
     end else if (vsync && state == STATE_U) begin
       frame_count <= frame_count + 1;
       if (frame_count == 500) begin
