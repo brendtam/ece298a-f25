@@ -31,50 +31,11 @@ module tt_um_vga_example(
   assign uio_out = 0;
   assign uio_oe  = 0;
   // Unused wires
-  wire _unused_ok = &{ena, ui_in, uio_in};
+  wire _unused_ok = &{ena, uio_in};
 
   // State machine
   reg state;
   localparam STATE_U = 0, STATE_W = 1;
-
-  // Rotation / spin
-  reg signed [5:0] cos_val, sin_val;
-  reg signed [13:0] start_u, start_v, row_u, row_v, curr_u, curr_v;
-  reg [3:0] angle_idx;
-  reg [2:0] spin_speed;
-
-  // Angle table
-  always @(*) begin
-    case(angle_idx[2:0])
-      0:  begin cos_val=31;  sin_val=0;    start_u=-10240; start_v=-7680;  end
-      1:  begin cos_val=30;  sin_val=13;   start_u=-6460;  start_v=-11720; end
-      2:  begin cos_val=24;  sin_val=24;   start_u=-1980;  start_v=-13860; end
-      3:  begin cos_val=13;  sin_val=30;   start_u=2920;   start_v=-13060; end
-      4:  begin cos_val=0;   sin_val=31;   start_u=7680;   start_v=-10240; end
-      5: begin cos_val=-13; sin_val=30;   start_u=11720;  start_v=-6460;  end
-      6: begin cos_val=-24; sin_val=24;   start_u=13860;  start_v=-1980;  end
-      7: begin cos_val=-30; sin_val=13;   start_u=13060;  start_v=2920;   end
-      default: begin cos_val=31; sin_val=0; start_u=-10240; start_v=-7680; end
-    endcase
-  end
-
-  // Once speed overflows back to zero, set w_done to 1
-  wire w_done = (spin_speed == 0);
-  wire signed [8:0] int_u = curr_u[13:5];
-  wire signed [8:0] int_v = curr_v[13:5];
-
-  // Shape positions
-  localparam pos4 = -210, pos3 = -210, pos2 = 70, pos = 70;
-  localparam line_width = 20;
-
-  wire in_shape = (state==STATE_W) &&
-                  (int_u >= -60 && int_u <= 80 && pix_x >= 128 && pix_x <= 512) &&
-                  (
-                    (int_u + (int_v<<1) >= pos3 && int_u + (int_v<<1) <= pos3+line_width) || 
-                    (int_u - (int_v<<1) >= pos2 && int_u - (int_v<<1) <= pos2+line_width) || 
-                    (int_u + (int_v<<1) >= pos && int_u + (int_v<<1) <= pos+line_width) || 
-                    (int_u - (int_v<<1) >= pos4 && int_u - (int_v<<1) <= pos4+line_width)
-                  );
 
   // Bullet parameters
   parameter H_ORIGIN=320, V_ORIGIN=0, BULLET_SIZE=10;
@@ -104,11 +65,53 @@ module tt_um_vga_example(
   // Frame count to slow translation speed
   reg [8:0] frame_count; reg [4:0] fall_speed;
 
-  // Animate U-shape pattern
+  // W code: the current (x,y) coordinates are rotated by (angle_idx * 22)
+  // degrees to create the transformed (u,v) plane.
+
+  // Rotation / spin
+  reg signed [5:0] cos_val, sin_val;
+  reg signed [13:0] start_u, start_v, row_u, row_v, curr_u, curr_v;
+  reg [3:0] angle_idx;
+  reg [2:0] spin_speed;
+
+  // Angle table
+  always @(*) begin
+    case(angle_idx[2:0])
+      0:  begin cos_val=31;  sin_val=0;    start_u=-10240; start_v=-7680;  end
+      1:  begin cos_val=30;  sin_val=13;   start_u=-6460;  start_v=-11720; end
+      2:  begin cos_val=24;  sin_val=24;   start_u=-1980;  start_v=-13860; end
+      3:  begin cos_val=13;  sin_val=30;   start_u=2920;   start_v=-13060; end
+      4:  begin cos_val=0;   sin_val=31;   start_u=7680;   start_v=-10240; end
+      5: begin cos_val=-13; sin_val=30;   start_u=11720;  start_v=-6460;  end
+      6: begin cos_val=-24; sin_val=24;   start_u=13860;  start_v=-1980;  end
+      7: begin cos_val=-30; sin_val=13;   start_u=13060;  start_v=2920;   end
+      default: begin cos_val=31; sin_val=0; start_u=-10240; start_v=-7680; end
+    endcase
+  end
+
+  // integer part of current u/v coordinates
+  wire signed [8:0] int_u = curr_u[13:5];
+  wire signed [8:0] int_v = curr_v[13:5];
+
+  // W positions
+  localparam pos4 = -210, pos3 = -210, pos2 = 70, pos = 70;
+  localparam line_width = 20;
+
+  wire in_shape = (state==STATE_W) &&
+                  (int_u >= -60 && int_u <= 80 && pix_x >= 128 && pix_x <= 512) &&
+                  (
+                    (int_u + (int_v<<1) >= pos3 && int_u + (int_v<<1) <= pos3+line_width) || 
+                    (int_u - (int_v<<1) >= pos2 && int_u - (int_v<<1) <= pos2+line_width) || 
+                    (int_u + (int_v<<1) >= pos && int_u + (int_v<<1) <= pos+line_width) || 
+                    (int_u - (int_v<<1) >= pos4 && int_u - (int_v<<1) <= pos4+line_width)
+                  );
+
+  // animations
   always @(posedge clk or negedge rst_n) begin
     if (~rst_n) begin
       angle_idx <= 4; row_u <= 0; row_v <= 0; curr_u <= 0; curr_v <= 0; spin_speed <= 1;
-      frame_count <= 0; fall_y <= 0; fall_speed <= 2; shift_side <= 0; state <= STATE_U;
+      frame_count <= 0; fall_y <= 0; fall_speed <= 2; shift_side <= 0;
+      state <= STATE_U;
     end else if (vsync && state == STATE_U) begin   // U section
       // Increment frame count
       frame_count <= frame_count + 1;
@@ -133,10 +136,13 @@ module tt_um_vga_example(
         state <= STATE_W;
       end
     end else if (state == STATE_W) begin      // W-section
+      // only update parameters per-frame
       if (pix_y == 480 && pix_x == 640) begin
+        // fixed rotation mode, spin_speed is used as a counter
         if (ui_in[0]) begin
           if (angle_idx == 0) spin_speed <= spin_speed + 1;
           angle_idx <= angle_idx + 1;
+        // wind-up rotation mode, every 32 frames the rotation speed will increase
         end else begin
           if (frame_count == 32) begin
             frame_count <= 0;
@@ -146,6 +152,7 @@ module tt_um_vga_example(
           end
           angle_idx <= angle_idx + spin_speed;
         end
+        // stopping condition for W
         if (spin_speed == 0) begin
           angle_idx <= 4; row_u <= 0; row_v <= 0; curr_u <= 0; curr_v <= 0; spin_speed <= 1;
           frame_count <= 0;
@@ -153,19 +160,22 @@ module tt_um_vga_example(
         end
       end
 
-      // Row/curr update
+      // u/v coordinates are calculated by incrementing cos/sin per pixel to form the rotated plane
       if (pix_x == 0) begin
+        // initial conditions of u/v, precomputed
         if (pix_y == 0) begin
           row_u <= angle_idx[3] ? -start_u : start_u;
           row_v <= angle_idx[3] ? -start_v : start_v;
           curr_u <= angle_idx[3] ? -start_u : start_u;
           curr_v <= angle_idx[3] ? -start_v : start_v;
+        // move down in u/v plane
         end else begin
           row_u <= angle_idx[3] ? row_u + sin_val : row_u - sin_val;
           row_v <= angle_idx[3] ? row_v - cos_val : row_v + cos_val;
           curr_u <= angle_idx[3] ? row_u + sin_val : row_u - sin_val;
           curr_v <= angle_idx[3] ? row_v - cos_val : row_v + cos_val;
         end
+      // go across in u/v plane
       end else if (video_active) begin
         curr_u <= angle_idx[3] ? curr_u - cos_val : curr_u + cos_val;
         curr_v <= angle_idx[3] ? curr_v - sin_val : curr_v + sin_val;

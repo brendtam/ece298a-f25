@@ -19,6 +19,23 @@ from cocotb.triggers import RisingEdge, FallingEdge, Timer, ReadOnly, ClockCycle
 #     dump_hierarchy(dut)
 
 @cocotb.test()
+async def u_end_test(dut):
+    cocotb.start_soon(Clock(dut.clk, 40, units="ns").start())
+    dut.rst_n.value = 0
+    await Timer(100, units="ns")
+    dut.rst_n.value = 1
+    dut.user_project.state.value = 0
+
+    for _ in range(500):
+        await RisingEdge(dut.user_project.vsync)
+        dut._log.info(f"{_} frames passed")
+        state = dut.user_project.state.value.integer
+        if state == 1:
+            return
+
+    assert False, "U took too long to transition"
+
+@cocotb.test()
 async def w_end_test(dut):
     cocotb.start_soon(Clock(dut.clk, 40, units="ns").start())
     dut.rst_n.value = 0
@@ -26,7 +43,7 @@ async def w_end_test(dut):
     dut.rst_n.value = 1
     dut.user_project.state.value = 1
 
-    for _ in range(576):
+    for _ in range(500):
         await RisingEdge(dut.user_project.vsync)
         dut._log.info(f"{_} frames passed")
         state = dut.user_project.state.value.integer
