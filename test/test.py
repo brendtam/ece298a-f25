@@ -24,13 +24,13 @@ async def vga_signal_test(dut):
     await Timer(100, units="ns")
     dut.rst_n.value = 1
 
-    for i in range(1, 525+1):
-        for j in range(1, 800+1):
+    for i in range(0, 525):
+        for j in range(0, 800):
             await RisingEdge(dut.clk)
             await ReadOnly()
 
             hsync = dut.user_project.hvsync_gen.hsync.value.integer
-            if (j > 656 and j <= 752):
+            if (j >= 656 and j < 752):
                 assert hsync == 1, f"hsync not enabled on x={j}"
             else:
                 assert hsync == 0, f"hsync not disabled on x={j}"
@@ -45,7 +45,7 @@ async def vga_signal_test(dut):
                 assert display_on == 0, f"display at {j},{i} should be off"
         
         vsync = dut.user_project.hvsync_gen.vsync.value.integer
-        if (i > 523 and i <= 525):
+        if (i >= 523 and i < 525):
             assert vsync == 1, f"vsync not enabled on y={i}"
         else:
             assert vsync == 0, f"vsync not disabled on y={i}"
