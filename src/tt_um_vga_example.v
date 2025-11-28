@@ -176,8 +176,11 @@ module tt_um_vga_example(
   wire valid = in_shape || in_pattern;
   wire checkerboard = pix_x[5] ^ shift_y[5];
 
-  assign R = (video_active) ? ((valid)?2'b11:(checkerboard?2'b00:2'b01)) : 2'b00;
-  assign G = (video_active) ? ((valid)?2'b11:(checkerboard?2'b00:2'b01)) : 2'b00;
-  assign B = (video_active) ? ((valid)?2'b01:(checkerboard?2'b00:2'b01)) : 2'b00;
+  // assign R = (video_active) ? ((valid)?2'b11:(checkerboard?2'b00:2'b01)) : 2'b00;
+  // assign G = (video_active) ? ((valid)?2'b11:(checkerboard?2'b00:2'b01)) : 2'b00;
+  // assign B = (video_active) ? ((valid)?2'b01:(checkerboard?2'b00:2'b01)) : 2'b00;
+  assign R = valid ? 2'b11 : 2'b00;
+  assign G = valid ? 2'b10 : 2'b00;
+  assign B = 2'b00;
 
 endmodule
