@@ -21,39 +21,57 @@ async def test_dump(dut):
 def within_2px(val, expected):
     return expected-2.0 <= val <= expected+2.0
 
+def get_expected_signs(angle_idx):
+    q = angle_idx >> 3   # quadrant 0–3
+
+    # x step uses cos
+    # y step uses sin
+    if q == 0:
+        return (1, 1)
+    elif q == 1:
+        return (-1, 1)
+    elif q == 2:
+        return (-1, -1)
+    else:
+        return (1, -1)
+
 @cocotb.test()
-async def w_rotate_test(dut):
+async def accumulator_test(dut):
     cocotb.start_soon(Clock(dut.clk, 40, units="ns").start())
     dut.rst_n.value = 0
     await Timer(100, units="ns")
     dut.rst_n.value = 1
     dut.user_project.state.value = 1
 
-    for frame in range(0, 16):
-        dut._log.info(f"testing frame {frame}")
-        for i in range(0, 525):
-            for j in range(0, 800):
-                await RisingEdge(dut.clk)
-                await ReadOnly()
+    for _ in range(5):
+        await RisingEdge(dut.clk)
 
-                pix_x = dut.user_project.hvsync_gen.hpos.value.integer
-                pix_y = dut.user_project.hvsync_gen.vpos.value.integer
-                if (pix_x > 640 or pix_y > 480):
-                    continue
+    for step in range(1000):
+        await ReadOnly()
 
-                rotated_x = dut.user_project.curr_u.value.integer
-                rotated_y = dut.user_project.curr_v.value.integer
-                angle_idx = dut.user_project.angle_idx.value.integer
-                
-                rot_x = rotated_x / 32.0
-                rot_y = rotated_y / 32.0
-                exp_x = (pix_x-320) * math.cos(angle_idx*2*math.pi / 16.0)
-                exp_y = (pix_y-240) * math.sin(angle_idx*2*math.pi / 16.0)
-                dut._log.info(f"{rotated_x}, {rotated_y}, {angle_idx}, {math.cos(angle_idx*2*math.pi / 16.0)}")
-                assert within_2px(rot_x, exp_x), \
-                    f"({pix_x}, {pix_y}) is not rotated correctly. x given: {rot_x}, x expected: {exp_x}"
-                assert within_2px(rot_y, exp_y), \
-                    f"({pix_x}, {pix_y}) is not rotated correctly. y given: {rot_y}, y expected: {exp_y}"
+        old_u = dut.user_project.curr_u.value.signed_integer
+        old_v = dut.user_project.curr_v.value.signed_integer
+
+        cos_val = dut.user_project.cos_val.value.signed_integer
+        sin_val = dut.user_project.sin_val.value.signed_integer
+        angle_idx = dut.user_project.angle_idx.value.integer
+
+        sign_x, sign_y = get_expected_signs(angle_idx)
+
+        expected_u = old_u + sign_x * cos_val
+        expected_v = old_v + sign_y * sin_val
+
+        await RisingEdge(dut.clk)
+        await ReadOnly()
+
+        new_u = dut.user_project.curr_u.value.signed_integer
+        new_v = dut.user_project.curr_v.value.signed_integer
+
+        assert abs(new_u - expected_u) <= 1, \
+            f"accumulator U step wrong: old={old_u} new={new_u} expected={expected_u}"
+
+        assert abs(new_v - expected_v) <= 1, \
+            f"accumulator V step wrong: old={old_v} new={new_v} expected={expected_v}"
 
 @cocotb.test()
 async def vga_signal_test(dut):
