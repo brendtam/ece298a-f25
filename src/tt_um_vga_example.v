@@ -12,9 +12,18 @@ module tt_um_vga_example(
 );
 
   // VGA signals
-  wire hsync, vsync, video_active;
-  wire [9:0] pix_x, pix_y;
+  wire hsync;
+  wire vsync;
   wire [1:0] R, G, B;
+  wire video_active;
+  wire [9:0] pix_x;
+  wire [9:0] pix_y;
+  wire [9:0] screen_w;
+  wire [9:0] screen_h;
+
+  // Screen size parameters
+  assign screen_w = 640;
+  assign screen_h = 480;
 
   hvsync_generator hvsync_gen(
     .clk(clk),
@@ -33,68 +42,100 @@ module tt_um_vga_example(
 
   // State machine
   reg state;
-  localparam STATE_U = 0, STATE_W = 1;
+  localparam STATE_U = 0;
+  localparam STATE_W = 1;
 
-  // Rotation / spin
-  reg signed [8:0] cos_val, sin_val;
-  reg signed [15:0] start_u, start_v, row_u, row_v, curr_u, curr_v;
+  // U/W animation
+  reg signed [8:0] cos_val;
+  reg signed [8:0] sin_val;
+  reg signed [15:0] start_u;
+  reg signed [15:0] start_v;
+  reg signed [15:0] row_u, row_v;
+  reg signed [15:0] curr_u, curr_v;
   reg [6:0] angle_idx;
   reg [3:0] spin_speed;
 
-  // wire [9:0] dx;
-  // wire [9:0] dy;
+  wire [1:0] spin_option = {ui_in[0], ui_in[1]};
 
-  // Angle table
   always @(*) begin
     case(angle_idx[5:2])
-      0:  begin cos_val=128; sin_val=0;    start_u=-40960; start_v=-30720; end
-      1:  begin cos_val=127; sin_val=28;   start_u=-33920; start_v=-39440; end
-      2:  begin cos_val=122; sin_val=55;   start_u=-25840; start_v=-46880; end
-      3:  begin cos_val=113; sin_val=79;   start_u=-17200; start_v=-52400; end
-      4:  begin cos_val=99;  sin_val=99;   start_u=-7920;  start_v=-55440; end
-      5:  begin cos_val=79;  sin_val=113;  start_u=1840;   start_v=-55120; end
-      6:  begin cos_val=55;  sin_val=122;  start_u=11680;  start_v=-52240; end
-      7:  begin cos_val=28;  sin_val=127;  start_u=21520;  start_v=-47360; end
-      8:  begin cos_val=0;   sin_val=128;  start_u=30720;  start_v=-40960; end
-      9:  begin cos_val=-28; sin_val=127;  start_u=39440;  start_v=-33920; end
-      10: begin cos_val=-55; sin_val=122;  start_u=46880;  start_v=-25840; end
-      11: begin cos_val=-79; sin_val=113;  start_u=52400;  start_v=-17200; end
-      12: begin cos_val=-99; sin_val=99;   start_u=55440;  start_v=-7920;  end
-      13: begin cos_val=-113;sin_val=79;   start_u=55120;  start_v=1840;   end
-      14: begin cos_val=-122;sin_val=55;   start_u=52240;  start_v=11680;  end
-      15: begin cos_val=-127;sin_val=28;   start_u=47360;  start_v=21520;  end
-      default: begin cos_val=128; sin_val=0; start_u=-40960; start_v=-30720; end
+      0:  begin cos_val =  128; sin_val =    0; start_u = -40960; start_v = -30720; end
+      1:  begin cos_val =  127; sin_val =   28; start_u = -33920; start_v = -39440; end
+      2:  begin cos_val =  122; sin_val =   55; start_u = -25840; start_v = -46880; end
+      3:  begin cos_val =  113; sin_val =   79; start_u = -17200; start_v = -52400; end
+      4:  begin cos_val =   99; sin_val =   99; start_u =  -7920; start_v = -55440; end
+      5:  begin cos_val =   79; sin_val =  113; start_u =   1840; start_v = -55120; end
+      6:  begin cos_val =   55; sin_val =  122; start_u =  11680; start_v = -52240; end
+      7:  begin cos_val =   28; sin_val =  127; start_u =  21520; start_v = -47360; end
+      8:  begin cos_val =    0; sin_val =  128; start_u =  30720; start_v = -40960; end
+      9:  begin cos_val =  -28; sin_val =  127; start_u =  39440; start_v = -33920; end
+      10: begin cos_val =  -55; sin_val =  122; start_u =  46880; start_v = -25840; end
+      11: begin cos_val =  -79; sin_val =  113; start_u =  52400; start_v = -17200; end
+      12: begin cos_val =  -99; sin_val =   99; start_u =  55440; start_v =  -7920; end
+      13: begin cos_val = -113; sin_val =   79; start_u =  55120; start_v =   1840; end
+      14: begin cos_val = -122; sin_val =   55; start_u =  52240; start_v =  11680; end
+      15: begin cos_val = -127; sin_val =   28; start_u =  47360; start_v =  21520; end
+      default: begin cos_val = 128; sin_val = 0; start_u = -40960; start_v = -30720; end
     endcase
   end
 
+  // W-state logic
   always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
-      angle_idx <= 0; row_u <= 0; row_v <= 0; curr_u <= 0; curr_v <= 0; spin_speed <= 1;
+      angle_idx <= 0;
+      row_u <= 0; row_v <= 0;
+      curr_u <= 0; curr_v <= 0;
+      spin_speed <= 1;
+      fall_y <= 0;
+      shift_side <= 0;
     end else if (state == STATE_W) begin
-      // Angle/rotation update
-      if (pix_y == 480 && pix_x == 640) begin
+      fall_y <= 0;
+      shift_side <= 0;
+      if (pix_y == screen_h && pix_x == screen_w) begin
         if (angle_idx < 6) spin_speed <= spin_speed + 1;
         angle_idx <= angle_idx + 6;
         if (spin_speed == 0) begin
-          angle_idx <= 0; row_u <= 0; row_v <= 0; curr_u <= 0; curr_v <= 0; spin_speed <= 1;
+          angle_idx <= 0;
+          row_u <= 0; row_v <= 0;
+          curr_u <= 0; curr_v <= 0;
+          spin_speed <= 1;
         end
       end
 
-      // Row/curr update
-      if (pix_x == 0) begin
-        if (pix_y == 0) begin
-          row_u <= angle_idx[6] ? -start_u : start_u;
-          row_v <= angle_idx[6] ? -start_v : start_v;
-          curr_u <= row_u;
-          curr_v <= row_v;
+      if (pix_y == 0 && pix_x == 0) begin
+        if (angle_idx[6]) begin
+          row_u <= -start_u;
+          row_v <= -start_v;
+          curr_u <= -start_u;
+          curr_v <= -start_v;
         end else begin
-          row_u <= angle_idx[6] ? row_u + sin_val : row_u - sin_val;
-          row_v <= angle_idx[6] ? row_v - cos_val : row_v + cos_val;
-          curr_u <= row_u; curr_v <= row_v;
+          row_u <= start_u;
+          row_v <= start_v;
+          curr_u <= start_u;
+          curr_v <= start_v;
         end
-      end else if (video_active) begin
-        curr_u <= angle_idx[6] ? curr_u - cos_val : curr_u + cos_val;
-        curr_v <= angle_idx[6] ? curr_v - sin_val : curr_v + sin_val;
+      end
+      else if (pix_x == 0) begin
+        if (angle_idx[6]) begin
+          row_u <= row_u + sin_val;
+          row_v <= row_v - cos_val;
+          curr_u <= row_u + sin_val;
+          curr_v <= row_v - cos_val;
+        end else begin
+          row_u <= row_u - sin_val;
+          row_v <= row_v + cos_val;
+          curr_u <= row_u - sin_val;
+          curr_v <= row_v + cos_val;
+        end
+      end
+      else if (video_active) begin
+        if (angle_idx[6]) begin
+          curr_u <= curr_u - cos_val;
+          curr_v <= curr_v - sin_val;
+        end else begin
+          curr_u <= curr_u + cos_val;
+          curr_v <= curr_v + sin_val;
+        end
       end
     end
   end
@@ -103,52 +144,103 @@ module tt_um_vga_example(
   wire signed [8:0] int_u = curr_u[15:7];
   wire signed [8:0] int_v = curr_v[15:7];
 
-  // Shape positions
-  localparam pos4 = -210, pos3 = -210, pos2 = 70, pos = 70;
-  localparam line_width = 20;
+  // Adaptive scaling factors
+  wire [9:0] scale_x = screen_w / 320;
+  wire [9:0] scale_y = screen_h / 240;
 
-  wire in_shape = (state==STATE_W) &&
-                  (int_u >= -60 && int_u <= 80 && pix_x >= 128 && pix_x <= 512) &&
-                  (
-                    (int_u + (int_v<<1) >= pos3 && int_u + (int_v<<1) <= pos3+line_width) || 
-                    (int_u - (int_v<<1) >= pos2 && int_u - (int_v<<1) <= pos2+line_width) || 
-                    (int_u + (int_v<<1) >= pos && int_u + (int_v<<1) <= pos+line_width) || 
-                    (int_u - (int_v<<1) >= pos4 && int_u - (int_v<<1) <= pos4+line_width)
-                  );
+  // Edge lines (scaled)
+  localparam pos4_0 = -105;
+  localparam pos3_0 = -105;
+  localparam pos2_0 = 35;
+  localparam pos_0  = 35;
+  localparam line_width_0 = 10;
 
-  // Bullet parameters
-  parameter H_ORIGIN=320, V_ORIGIN=0, BULLET_SIZE=10;
-  reg [9:0] fall_y; reg [8:0] shift_side;
+  wire Lo = 
+      (int_u >= -30 && int_u <= 40) &&
+      (pix_x >= (64*scale_x) && pix_x <= (256*scale_x)) &&
+      (int_u + (int_v<<1) >= pos3_0 && int_u + (int_v<<1) <= pos3_0+line_width_0);
+  wire Li =
+      (int_u >= -30 && int_u <= 40) &&
+      (pix_x >= (64*scale_x) && pix_x <= (256*scale_x)) &&
+      (int_u - (int_v<<1) >= pos2_0 && int_u - (int_v<<1) <= pos2_0+line_width_0);
+  wire Ri =
+      (int_u >= -30 && int_u <= 40) &&
+      (pix_x >= (64*scale_x) && pix_x <= (256*scale_x)) &&
+      (int_u + (int_v<<1) >= pos_0 && int_u + (int_v<<1) <= pos_0+line_width_0);
+  wire Ro =
+      (int_u >= -30 && int_u <= 40) &&
+      (pix_x >= (64*scale_x) && pix_x <= (256*scale_x)) &&
+      (int_u - (int_v<<1) >= pos4_0 && int_u - (int_v<<1) <= pos4_0+line_width_0);
+  wire in_shape = (Lo || Li || Ri || Ro) && state == STATE_W;
 
-  wire [9:0] bullet_pos_x [0:7], bullet_pos_y [0:7];
+  // U-state bullets
+  wire [9:0] H_ORIGIN = screen_w / 2;
+  localparam BULLET_SIZE = 5;
+
+  wire [9:0] bullet_pos_x [0:7];
+  wire [9:0] bullet_pos_y [0:7];
   wire [7:0] bullets;
 
-  // Base positions
-  wire signed [9:0] base_x[0:3]; assign base_x[0]= -62; assign base_x[1]= -62; assign base_x[2]= -50; assign base_x[3]= -18;
-  wire signed [9:0] base_y[0:3]; assign base_y[0]=0; assign base_y[1]=48; assign base_y[2]=100; assign base_y[3]=120;
+  localparam signed [9:0] base_x0 = -31;
+  localparam signed [9:0] base_x1 = -31;
+  localparam signed [9:0] base_x2 = -25;
+  localparam signed [9:0] base_x3 = -9;
+
+  localparam signed [9:0] base_y0 = 0;
+  localparam signed [9:0] base_y1 = 24;
+  localparam signed [9:0] base_y2 = 50;
+  localparam signed [9:0] base_y3 = 60;
 
   genvar k;
   generate
-    for(k=0; k<4; k=k+1) begin
-      assign bullet_pos_x[k]   = H_ORIGIN + base_x[k] + shift_side;
-      assign bullet_pos_x[7-k] = H_ORIGIN - base_x[k] - shift_side;
-      assign bullet_pos_y[k]   = base_y[k] + fall_y;
-      assign bullet_pos_y[7-k] = base_y[k] + fall_y;
+    for (k = 0; k < 4; k = k + 1) begin : bullets_gen
+      if (k == 0) begin
+        assign bullet_pos_x[k]   = H_ORIGIN + base_x0*scale_x + shift_side;
+        assign bullet_pos_x[7-k] = H_ORIGIN - base_x0*scale_x - shift_side;
+        assign bullet_pos_y[k]   = base_y0*scale_y + fall_y;
+        assign bullet_pos_y[7-k] = base_y0*scale_y + fall_y;
+      end else if (k == 1) begin
+        assign bullet_pos_x[k]   = H_ORIGIN + base_x1*scale_x + shift_side;
+        assign bullet_pos_x[7-k] = H_ORIGIN - base_x1*scale_x - shift_side;
+        assign bullet_pos_y[k]   = base_y1*scale_y + fall_y;
+        assign bullet_pos_y[7-k] = base_y1*scale_y + fall_y;
+      end else if (k == 2) begin
+        assign bullet_pos_x[k]   = H_ORIGIN + base_x2*scale_x + shift_side;
+        assign bullet_pos_x[7-k] = H_ORIGIN - base_x2*scale_x - shift_side;
+        assign bullet_pos_y[k]   = base_y2*scale_y + fall_y;
+        assign bullet_pos_y[7-k] = base_y2*scale_y + fall_y;
+      end else begin
+        assign bullet_pos_x[k]   = H_ORIGIN + base_x3*scale_x + shift_side;
+        assign bullet_pos_x[7-k] = H_ORIGIN - base_x3*scale_x - shift_side;
+        assign bullet_pos_y[k]   = base_y3*scale_y + fall_y;
+        assign bullet_pos_y[7-k] = base_y3*scale_y + fall_y;
+      end
     end
   endgenerate
 
-  reg [9:0] frame_count; reg [4:0] fall_speed;
+  // Frame counter for U-state
+  reg [9:0] frame_count;
+  reg [4:0] fall_speed;
+  reg [8:0] shift_side;
+  reg [9:0] fall_y;
 
   always @(posedge clk or negedge rst_n) begin
     if (~rst_n) begin
-      frame_count <= 0; fall_y <= 0; fall_speed <= 2; shift_side <= 0;
+      frame_count <= 0;
+      fall_y <= 0;
+      fall_speed <= 2;
+      shift_side <= 0;
     end else if (vsync) begin
       frame_count <= frame_count + 1;
-      if (frame_count == 800) begin
-        fall_y <= (fall_y >= 180) ? 180 : fall_y + fall_speed;
-        shift_side <= (fall_y < 180) ? 0 : shift_side + 1;
-        fall_speed <= (fall_y < 25) ? 10 : ((fall_y < 125) ? 4 : 1);
+      if (frame_count >= 800) begin
         frame_count <= 0;
+
+        if (fall_y < screen_h/2) fall_y <= fall_y + fall_speed;
+        if (fall_y >= screen_h/4) shift_side <= shift_side + 1;
+
+        if      (fall_y < screen_h/10) fall_speed <= 5;
+        else if (fall_y < screen_h/2)  fall_speed <= 2;
+        else                             fall_speed <= 1;
       end
     end
   end
@@ -156,39 +248,46 @@ module tt_um_vga_example(
   // Render bullets
   genvar i;
   generate
-    for(i=0;i<8;i=i+1) begin : bullet_loop
-      wire [9:0] dx = (pix_x>bullet_pos_x[i]) ? (pix_x-bullet_pos_x[i]) : (bullet_pos_x[i]-pix_x);
-      wire [9:0] dy = (pix_y>bullet_pos_y[i]) ? (pix_y-bullet_pos_y[i]) : (bullet_pos_y[i]-pix_y);
-      assign bullets[i] = ((dx+dy)<=BULLET_SIZE);
+    for (i = 0; i < 8; i=i+1) begin : render_bullets
+      wire [9:0] dx = (pix_x > bullet_pos_x[i]) ? (pix_x - bullet_pos_x[i]) : (bullet_pos_x[i] - pix_x);
+      wire [9:0] dy = (pix_y > bullet_pos_y[i]) ? (pix_y - bullet_pos_y[i]) : (bullet_pos_y[i] - pix_y);
+      assign bullets[i] = ((dx + dy) <= BULLET_SIZE);
     end
   endgenerate
 
-  wire in_pattern = (|bullets) && state==STATE_U;
-  wire u_done = (shift_side>500);
+  wire in_pattern = |bullets && state == STATE_U;
+  wire u_done = (shift_side > (screen_w/2 + 100));
 
-  // Background
+  // Background scroll
   reg [5:0] bg_shift;
   wire [9:0] shift_y = pix_y - bg_shift;
-  always @(posedge vsync or negedge rst_n) begin
+  always @(posedge clk or negedge rst_n) begin
     if (!rst_n) bg_shift <= 0;
-    else bg_shift <= bg_shift + 3;
+    else if (vsync) bg_shift <= bg_shift + 1;
   end
 
-  // State transition
-  always @(posedge vsync or negedge rst_n) begin
+  // State machine
+  always @(posedge clk or negedge rst_n) begin
     if (~rst_n) state <= STATE_U;
-    else case(state)
-      STATE_U: if(u_done) state <= STATE_W;
-      STATE_W: if(w_done) state <= STATE_U;
-    endcase
+    else begin
+      case (state)
+        STATE_U: if (u_done) state <= STATE_W;
+        STATE_W: if (w_done) state <= STATE_U;
+      endcase
+    end
   end
 
-  // Color generation
+  // Color output
   wire valid = in_shape || in_pattern;
-  wire checkerboard = pix_x[5] ^ shift_y[5];
-
-  assign R = (video_active) ? ((valid)?2'b11:(checkerboard?2'b00:2'b01)) : 2'b00;
-  assign G = (video_active) ? ((valid)?2'b11:(checkerboard?2'b00:2'b01)) : 2'b00;
-  assign B = (video_active) ? ((valid)?2'b01:(checkerboard?2'b00:2'b01)) : 2'b00;
+  wire checkerboard = pix_x[4] ^ shift_y[4];
+  assign R = ((video_active) ?
+    ((valid) ? 2'b11 :
+    ((checkerboard) ? 2'b00 : 2'b01)) : 2'b00);
+  assign G = ((video_active) ?
+    ((valid) ? 2'b11 :
+    ((checkerboard) ? 2'b00 : 2'b01)) : 2'b00);
+  assign B = ((video_active) ?
+    ((valid) ? 2'b01 :
+    ((checkerboard) ? 2'b00 : 2'b01)) : 2'b00);
 
 endmodule
