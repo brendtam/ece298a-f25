@@ -35,6 +35,12 @@ def get_expected_signs(angle_idx):
     else:
         return (1, -1)
 
+def to_signed14(x):
+    x &= 0x3FFF               # keep only 14 bits
+    if x & 0x2000:            # if sign bit is set
+        return x - 0x4000     # convert to negative value
+    return x
+
 @cocotb.test()
 async def accumulator_test(dut):
     cocotb.start_soon(Clock(dut.clk, 40, units="ns").start())
@@ -58,13 +64,8 @@ async def accumulator_test(dut):
 
         sign_x, sign_y = get_expected_signs(angle_idx)
 
-        expected_u = old_u + sign_x * cos_val
-        expected_v = old_v + sign_y * sin_val
-
-        if (expected_u >= 8192):
-            expected_u = (sign_x * cos_val) - 8191
-        if (expected_v >= 8192):
-            expected_v = (sign_y * sin_val) - 8191
+        expected_u = to_signed14(old_u + sign_x * cos_val)
+        expected_v = to_signed14(old_v + sign_y * sin_val)
 
         await RisingEdge(dut.clk)
         await ReadOnly()
