@@ -150,7 +150,7 @@ module tt_um_vga_example(
   // Render bullets
  genvar i;
   generate
-    for (i = 0; i < 8; i=i+1) begin : render_bullets
+    for (i = 0; i < 6; i=i+1) begin : render_bullets
       assign bullets[i] = (pix_x >= bullet_pos_x[i]-BULLET_SIZE) &&
                           (pix_x <= bullet_pos_x[i]+BULLET_SIZE) &&
                           (pix_y >= bullet_pos_y[i]-BULLET_SIZE) &&
