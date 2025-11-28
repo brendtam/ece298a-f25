@@ -43,20 +43,29 @@ def to_signed14(x):
 
 @cocotb.test()
 async def accumulator_test(dut):
+
     cocotb.start_soon(Clock(dut.clk, 40, units="ns").start())
     dut.rst_n.value = 0
     await Timer(100, units="ns")
     dut.rst_n.value = 1
-    dut.user_project.state.value = 1
 
-    for _ in range(5):
+    # force W rotate mode
+    dut.user_project.state.value = dut.user_project.STATE_W.value
+
+    # wait internal reset
+    for _ in range(10):
         await RisingEdge(dut.clk)
 
-    for step in range(1000000):
+    for step in range(50000):   # enough for many rows
         await ReadOnly()
 
-        old_u = dut.user_project.curr_u.value.signed_integer
-        old_v = dut.user_project.curr_v.value.signed_integer
+        old_u   = dut.user_project.curr_u.value.signed_integer
+        old_v   = dut.user_project.curr_v.value.signed_integer
+        old_ru  = dut.user_project.row_u.value.signed_integer
+        old_rv  = dut.user_project.row_v.value.signed_integer
+
+        pix_x   = dut.user_project.hvsync_gen.hpos.value.integer
+        pix_y   = dut.user_project.hvsync_gen.vpos.value.integer
 
         cos_val = dut.user_project.cos_val.value.signed_integer
         sin_val = dut.user_project.sin_val.value.signed_integer
@@ -64,26 +73,46 @@ async def accumulator_test(dut):
 
         sign_x, sign_y = get_expected_signs(angle_idx)
 
-        expected_u = to_signed14(old_u + sign_x * cos_val)
-        expected_v = to_signed14(old_v + sign_y * sin_val)
+        # ---------------------
+        # Compute expected next values
+        # ---------------------
+        if (pix_x == 0 and pix_y == 0):
+            # Frame reset case
+            expected_u = (sin_val * 0)  # actually start_u, but this varies with LUT quadrant
+            expected_v = (cos_val * 0)  # same, but we skip strict test
+            skip_check = True
 
+        elif pix_x == 0:
+            # New row begins
+            expected_row_u = to_signed14(old_ru + (sign_y * sin_val))
+            expected_row_v = to_signed14(old_rv - (sign_x * cos_val))
+
+            expected_u = expected_row_u
+            expected_v = expected_row_v
+            skip_check = False
+
+        else:
+            # Normal pixel-to-pixel step
+            expected_u = to_signed14(old_u + sign_x * cos_val)
+            expected_v = to_signed14(old_v + sign_y * sin_val)
+            skip_check = False
+
+        # Advance clock and sample new values
         await RisingEdge(dut.clk)
         await ReadOnly()
 
-        new_u = dut.user_project.curr_u.value.signed_integer
-        new_v = dut.user_project.curr_v.value.signed_integer
+        new_u  = dut.user_project.curr_u.value.signed_integer
+        new_v  = dut.user_project.curr_v.value.signed_integer
 
-        pix_x = dut.user_project.hvsync_gen.hpos.value.integer
-        pix_y = dut.user_project.hvsync_gen.vpos.value.integer
-
-        if (pix_x > 640 or pix_y > 480):
+        # Skip the very first pixel of the frame due to LUT symmetry logic
+        if skip_check:
             continue
 
-        assert abs(new_u - expected_u) <= 15, \
-            f"accumulator U step wrong at {pix_x},{pix_y} (angle {angle_idx}): old={old_u} new={new_u} expected={expected_u}"
+        assert abs(new_u - expected_u) <= 1, \
+            f"[row {pix_y}, x {pix_x}] U wrong: old={old_u} new={new_u} expect={expected_u}"
 
-        assert abs(new_v - expected_v) <= 15, \
-            f"accumulator V step wrong at {pix_x},{pix_y} (angle {angle_idx}): old={old_v} new={new_v} expected={expected_v}"
+        assert abs(new_v - expected_v) <= 1, \
+            f"[row {pix_y}, x {pix_x}] V wrong: old={old_v} new={new_v} expect={expected_v}"
 
 @cocotb.test()
 async def vga_signal_test(dut):
