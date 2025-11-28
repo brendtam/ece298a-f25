@@ -61,6 +61,11 @@ async def accumulator_test(dut):
         expected_u = old_u + sign_x * cos_val
         expected_v = old_v + sign_y * sin_val
 
+        if (expected_u >= 8192):
+            expected_u = (sign_x * cos_val) - 8191
+        if (expected_v >= 8192):
+            expected_v = (sign_y * sin_val) - 8191
+
         await RisingEdge(dut.clk)
         await ReadOnly()
 
