@@ -2,6 +2,21 @@ import cocotb
 from cocotb.clock import Clock
 from cocotb.triggers import RisingEdge, FallingEdge, Timer, ReadOnly
 
+def dump_hierarchy(obj, indent=0):
+    for name in dir(obj):
+        try:
+            child = getattr(obj, name)
+            if hasattr(child, "_fullname"):
+                print("  " * indent + name)
+                dump_hierarchy(child, indent+1)
+        except Exception:
+            pass
+
+@cocotb.test()
+async def test_dump(dut):
+    dut._log.info("dut members: %s", dir(dut))
+    dump_hierarchy(dut)
+
 @cocotb.test()
 async def vga_signal_test(dut):
     cocotb.start_soon(Clock(dut.clk, 40, units="ns").start())
