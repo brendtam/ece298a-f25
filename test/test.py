@@ -77,10 +77,10 @@ async def accumulator_test(dut):
         pix_y = dut.user_project.hvsync_gen.vpos.value.integer
 
         assert abs(new_u - expected_u) <= 15, \
-            f"accumulator U step wrong at {pix_x},{pix_y}: old={old_u} new={new_u} expected={expected_u}"
+            f"accumulator U step wrong at {pix_x},{pix_y} (angle {angle_idx}): old={old_u} new={new_u} expected={expected_u}"
 
         assert abs(new_v - expected_v) <= 15, \
-            f"accumulator V step wrong at {pix_x},{pix_y}: old={old_v} new={new_v} expected={expected_v}"
+            f"accumulator V step wrong at {pix_x},{pix_y} (angle {angle_idx}): old={old_v} new={new_v} expected={expected_v}"
 
 @cocotb.test()
 async def vga_signal_test(dut):
