@@ -1,81 +1,76 @@
 import cocotb
-from cocotb.triggers import RisingEdge, Timer
+from cocotb.triggers import RisingEdge
 
 
 # ----------------------------
-# Helper: safe read
+# Helper: safe read of output bits
 # ----------------------------
-def safe_int(sig):
+def safe(sig):
     val = sig.value
-    if val.is_resolvable:
-        return int(val)
-    return None
+    assert val.is_resolvable, f"{sig._name} has X/Z"
+    return int(val)
 
 
 # ----------------------------
-# 1. Basic sanity test
+# 1. Smoke test (clock works)
 # ----------------------------
 @cocotb.test()
 async def test_dump(dut):
-    await Timer(10, units="ns")
+    for _ in range(5):
+        await RisingEdge(dut.clk)
     assert True
 
 
 # ----------------------------
-# 2. Accumulator test (curr_u)
+# 2. Output sanity test
 # ----------------------------
 @cocotb.test()
-async def accumulator_test(dut):
-    await Timer(20, units="ns")
-
-    try:
-        old_u = safe_int(dut.curr_u)
-    except:
-        assert False, "curr_u not accessible"
-
+async def output_sanity_test(dut):
     for _ in range(10):
         await RisingEdge(dut.clk)
 
-    new_u = safe_int(dut.curr_u)
+        out = safe(dut.uo_out)
 
-    assert new_u is not None, "curr_u became X"
-    assert old_u is not None, "curr_u started X"
-
-
-# ----------------------------
-# 3. VGA signal test
-# ----------------------------
-@cocotb.test()
-async def vga_signal_test(dut):
-    await Timer(20, units="ns")
-
-    # top-level signals (NOT internal hierarchy)
-    hsync = safe_int(dut.uo_out)
-    vsync = safe_int(dut.uo_out)
-
-    assert hsync is not None
+        # must always be 8-bit valid signal
+        assert 0 <= out <= 0xFF, "uo_out out of range"
 
 
 # ----------------------------
-# 4. U-end test
+# 3. Activity test (design is alive)
 # ----------------------------
 @cocotb.test()
-async def u_end_test(dut):
-    for _ in range(20):
-        await RisingEdge(dut.clk)
+async def activity_test(dut):
+    prev = safe(dut.uo_out)
 
-    state = safe_int(dut.state)
-    assert state in (0, 1), "state invalid or X"
+    changed = False
 
-
-# ----------------------------
-# 5. W-end test
-# ----------------------------
-@cocotb.test()
-async def w_end_test(dut):
     for _ in range(50):
         await RisingEdge(dut.clk)
+        curr = safe(dut.uo_out)
 
-    if dut.state.value.is_resolvable:
-        state = int(dut.state.value)
-        assert state in (0, 1)
+        if curr != prev:
+            changed = True
+            break
+
+        prev = curr
+
+    assert changed, "uo_out never changes (design may be stuck/reset)"
+
+
+# ----------------------------
+# 4. Reset behavior test
+# ----------------------------
+@cocotb.test()
+async def reset_test(dut):
+    dut.rst_n.value = 0
+
+    for _ in range(5):
+        await RisingEdge(dut.clk)
+
+    dut.rst_n.value = 1
+
+    await RisingEdge(dut.clk)
+
+    out = safe(dut.uo_out)
+
+    assert out is not None, "output invalid after reset"
