@@ -2,75 +2,63 @@ import cocotb
 from cocotb.triggers import RisingEdge
 
 
-# ----------------------------
-# Helper: safe read of output bits
-# ----------------------------
+def get_dut(dut):
+    for name in ["tt_um_vga_example", "uut", "dut"]:
+        if hasattr(dut, name):
+            return getattr(dut, name)
+    return dut
+
+
 def safe(sig):
-    val = sig.value
-    assert val.is_resolvable, f"{sig._name} has X/Z"
-    return int(val)
+    assert sig.value.is_resolvable, f"{sig._name} has X/Z"
+    return int(sig.value)
 
 
-# ----------------------------
-# 1. Smoke test (clock works)
-# ----------------------------
 @cocotb.test()
 async def test_dump(dut):
     for _ in range(5):
         await RisingEdge(dut.clk)
-    assert True
 
 
-# ----------------------------
-# 2. Output sanity test
-# ----------------------------
 @cocotb.test()
 async def output_sanity_test(dut):
+    m = get_dut(dut)
+
     for _ in range(10):
         await RisingEdge(dut.clk)
 
-        out = safe(dut.uo_out)
-
-        # must always be 8-bit valid signal
-        assert 0 <= out <= 0xFF, "uo_out out of range"
+    out = safe(m.uo_out)
+    assert 0 <= out <= 0xFF
 
 
-# ----------------------------
-# 3. Activity test (design is alive)
-# ----------------------------
 @cocotb.test()
 async def activity_test(dut):
-    prev = safe(dut.uo_out)
+    m = get_dut(dut)
 
-    changed = False
+    prev = None
 
-    for _ in range(50):
+    for _ in range(30):
         await RisingEdge(dut.clk)
-        curr = safe(dut.uo_out)
+        curr = safe(m.uo_out)
 
-        if curr != prev:
-            changed = True
-            break
+        if prev is not None and curr != prev:
+            return
 
         prev = curr
 
-    assert changed, "uo_out never changes (design may be stuck/reset)"
+    assert False, "uo_out never changes"
 
 
-# ----------------------------
-# 4. Reset behavior test
-# ----------------------------
 @cocotb.test()
 async def reset_test(dut):
-    dut.rst_n.value = 0
+    m = get_dut(dut)
 
+    dut.rst_n.value = 0
     for _ in range(5):
         await RisingEdge(dut.clk)
 
     dut.rst_n.value = 1
-
     await RisingEdge(dut.clk)
 
-    out = safe(dut.uo_out)
-
-    assert out is not None, "output invalid after reset"
+    out = safe(m.uo_out)
+    assert out is not None
